@@ -9,14 +9,6 @@
     "imageUrl": "https://raw.githubusercontent.com/Rovaal-code/JellyNotify/main/docs/logo.png",
     "versions": [
       {
-        "version": "0.1.0.1",
-        "changelog": "JellyNotify v0.1.0.1 - new holographic visual style\n\nCompatible with Jellyfin 10.11.11 (the version this build targets and was verified against), Seerr 3.3.0, Radarr 6.1.1.10360, Sonarr 4.0.17.2952, and Jellyfin Enhanced 11.12.0.0.\n\n- Full visual restyle of the config page and the bell/panel/toasts: glass cards with a violet-to-cyan gradient border, a self-hosted Orbitron/Exo 2 font pairing, glowing status pills with a live pulse, and an animated aurora background on the config page.\n- No functional changes - every id, class, and behavior JS depends on stayed exactly the same, this is CSS/markup only.",
-        "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/Rovaal-code/JellyNotify/releases/download/v0.1.0.1/jellynotify_0.1.0.1.zip",
-        "checksum": "10d1e69d73da985659100a22513612d8",
-        "timestamp": "2026-07-04T22:40:16Z"
-      },
-      {
         "version": "0.1.0.0",
         "changelog": "JellyNotify v0.1.0.0 - initial release\n\nCompatible with Jellyfin 10.11.11 (the version this build targets and was verified against), Seerr 3.3.0, Radarr 6.1.1.10360, Sonarr 4.0.17.2952, and Jellyfin Enhanced 11.12.0.0.\n\nPer-user Jellyfin notifications with a bell, unread badge, notification panel, and toast alerts. Integrates with Overseerr/Jellyseerr, Sonarr, and Radarr via instant webhooks, with Discord, Telegram, and WhatsApp delivery.",
         "targetAbi": "10.11.0.0",
