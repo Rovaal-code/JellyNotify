@@ -1,0 +1,1439 @@
+/* ================================================================
+   JellyNotify - Configuration and bell UI styles
+   ================================================================ */
+
+:root {
+    --jn-accent: #9b59b6;
+    --jn-accent-hover: #8e44ad;
+    --jn-accent-glow: rgba(155, 89, 182, 0.3);
+    --jn-bg: #1a1a2e;
+    --jn-surface: #16213e;
+    --jn-surface-2: #0f3460;
+    --jn-text: #e0e0e0;
+    --jn-text-muted: #a0a0b0;
+    --jn-border: rgba(155, 89, 182, 0.2);
+    --jn-success: #27ae60;
+    --jn-danger: #e74c3c;
+    --jn-warning: #f39c12;
+    --jn-info: #3498db;
+    --jn-radius: 12px;
+    --jn-radius-sm: 8px;
+    --jn-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    --jn-transition: 0.2s ease;
+}
+
+/* ── Config page ─────────────────────────────────────────────────── */
+.jn-header {
+    text-align: center;
+    padding: 2rem 1rem 1.5rem;
+    border-bottom: 1px solid var(--jn-border);
+    margin-bottom: 2rem;
+}
+
+.jn-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.jn-logo-icon {
+    font-size: 2.5rem;
+    animation: jn-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes jn-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.jn-title {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #9b59b6, #3498db);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+
+.jn-subtitle {
+    color: var(--jn-text-muted);
+    font-size: 1rem;
+    margin: 0;
+}
+
+.jn-section {
+    background: var(--jn-surface);
+    border: 1px solid var(--jn-border);
+    border-radius: var(--jn-radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: box-shadow var(--jn-transition);
+}
+
+.jn-section:hover {
+    box-shadow: 0 0 20px var(--jn-accent-glow);
+}
+
+.jn-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.jn-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--jn-accent);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.jn-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.jn-field-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.jn-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+    min-width: 200px;
+}
+
+.jn-field-half {
+    max-width: 50%;
+}
+
+.jn-field-grow {
+    flex: 1;
+    min-width: 0;
+}
+
+.jn-section-title-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.jn-section-icon {
+    width: 1.3rem;
+    height: 1.3rem;
+    flex-shrink: 0;
+}
+
+.jn-label {
+    font-size: 0.85rem;
+    color: var(--jn-text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.jn-input,
+.jn-select {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--jn-border);
+    border-radius: var(--jn-radius-sm);
+    color: var(--jn-text);
+    padding: 0.6rem 0.85rem;
+    font-size: 0.95rem;
+    transition: border-color var(--jn-transition), box-shadow var(--jn-transition);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.jn-input:focus,
+.jn-select:focus {
+    outline: none;
+    border-color: var(--jn-accent);
+    box-shadow: 0 0 0 3px var(--jn-accent-glow);
+}
+
+.jn-input::placeholder {
+    color: var(--jn-text-muted);
+    opacity: 0.6;
+}
+
+/* Toggle switch */
+.jn-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+}
+
+.jn-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.jn-toggle-slider {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    transition: background var(--jn-transition);
+    flex-shrink: 0;
+}
+
+.jn-toggle-slider::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform var(--jn-transition);
+}
+
+.jn-toggle input:checked + .jn-toggle-slider {
+    background: var(--jn-accent);
+}
+
+.jn-toggle input:checked + .jn-toggle-slider::after {
+    transform: translateX(20px);
+}
+
+.jn-toggle-label {
+    font-size: 0.9rem;
+    color: var(--jn-text-muted);
+}
+
+.jn-toggle-small .jn-toggle-slider {
+    width: 34px;
+    height: 18px;
+}
+
+.jn-toggle-small .jn-toggle-slider::after {
+    width: 12px;
+    height: 12px;
+    top: 3px;
+    left: 3px;
+}
+
+.jn-toggle-small input:checked + .jn-toggle-slider::after {
+    transform: translateX(16px);
+}
+
+/* Checkboxes */
+.jn-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--jn-text);
+}
+
+.jn-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--jn-accent);
+    cursor: pointer;
+}
+
+/* Buttons */
+.jn-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--jn-radius-sm);
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all var(--jn-transition);
+    white-space: nowrap;
+}
+
+.jn-btn-primary {
+    background: linear-gradient(135deg, var(--jn-accent), #3498db);
+    color: #fff;
+    box-shadow: 0 2px 12px var(--jn-accent-glow);
+}
+
+.jn-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px var(--jn-accent-glow);
+}
+
+.jn-btn-secondary {
+    background: rgba(155, 89, 182, 0.15);
+    color: var(--jn-accent);
+    border: 1px solid var(--jn-border);
+}
+
+.jn-btn-secondary:hover {
+    background: rgba(155, 89, 182, 0.25);
+}
+
+.jn-btn-add {
+    background: rgba(39, 174, 96, 0.15);
+    color: var(--jn-success);
+    border: 1px solid rgba(39, 174, 96, 0.25);
+    font-size: 0.85rem;
+    padding: 0.45rem 0.9rem;
+}
+
+.jn-btn-add:hover {
+    background: rgba(39, 174, 96, 0.25);
+}
+
+.jn-btn-danger {
+    background: rgba(231, 76, 60, 0.15);
+    color: var(--jn-danger);
+    border: 1px solid rgba(231, 76, 60, 0.25);
+}
+
+.jn-btn-danger:hover {
+    background: rgba(231, 76, 60, 0.3);
+}
+
+.jn-btn-icon {
+    padding: 0.4rem 0.6rem;
+    font-size: 1rem;
+}
+
+.jn-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+/* Result messages */
+.jn-result-msg {
+    padding: 0.6rem 1rem;
+    border-radius: var(--jn-radius-sm);
+    font-size: 0.9rem;
+    animation: jn-fadein 0.3s ease;
+}
+
+@keyframes jn-fadein {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.jn-result-msg.success {
+    background: rgba(39, 174, 96, 0.15);
+    border: 1px solid rgba(39, 174, 96, 0.3);
+    color: #5dca82;
+}
+
+.jn-result-msg.error {
+    background: rgba(231, 76, 60, 0.15);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    color: #e97b6e;
+}
+
+.jn-result-msg.warning {
+    background: rgba(243, 156, 18, 0.15);
+    border: 1px solid rgba(243, 156, 18, 0.3);
+    color: var(--jn-warning);
+}
+
+.jn-help-text {
+    color: var(--jn-text-muted);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+/* *arr instances */
+.jn-instances {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.jn-arr-instance {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--jn-border);
+    border-radius: var(--jn-radius-sm);
+    padding: 1rem;
+    animation: jn-fadein 0.3s ease;
+}
+
+.jn-arr-instance-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.jn-arr-instance-name {
+    font-weight: 600;
+    color: var(--jn-text);
+}
+
+.jn-arr-instance-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+/* ================================================================
+   Bell notification UI (injected into Jellyfin main interface)
+   ================================================================ */
+
+/* Synthetic fallback container appended to the MUI toolbar when no
+   .headerRight or user-menu button is present (see getHeaderRightContainer
+   in jellynotify.js). */
+.jn-header-container {
+    display: flex;
+    align-items: center;
+}
+
+/* Bell button */
+#jn-bell-btn {
+    position: relative;
+    overflow: visible;
+    isolation: isolate;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--jn-transition), transform var(--jn-transition);
+}
+
+#jn-bell-btn:hover {
+    background: rgba(255,255,255,0.1);
+    transform: scale(1.1);
+}
+
+#jn-bell-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+/* Draws attention to the bell until the user opens it for the first time ever
+   (see hasOpenedBell) — a soft recurring glow + a small ring shake, gentle enough
+   to sit in the Jellyfin header without looking broken or alarming. */
+#jn-bell-btn.jn-bell-pulse {
+    animation: jn-bell-glow 2.2s ease-in-out infinite;
+}
+
+#jn-bell-btn.jn-bell-pulse svg {
+    animation: jn-bell-shake 2.2s ease-in-out infinite;
+    transform-origin: top center;
+}
+
+@keyframes jn-bell-glow {
+    0%, 100% { box-shadow: 0 0 0 0 var(--jn-accent-glow); }
+    50% { box-shadow: 0 0 0 8px rgba(155, 89, 182, 0); }
+}
+
+@keyframes jn-bell-shake {
+    0%, 30%, 100% { transform: rotate(0deg); }
+    4% { transform: rotate(14deg); }
+    8% { transform: rotate(-12deg); }
+    12% { transform: rotate(10deg); }
+    16% { transform: rotate(-8deg); }
+    20% { transform: rotate(4deg); }
+    24% { transform: rotate(0deg); }
+}
+
+/* Badge */
+#jn-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    box-shadow: 0 2px 6px rgba(231,76,60,0.5);
+    animation: jn-badge-pop 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+    pointer-events: none;
+    z-index: 2;
+}
+
+@keyframes jn-badge-pop {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+}
+
+/* Notification panel */
+#jn-panel {
+    position: fixed;
+    top: 60px;
+    right: 16px;
+    width: 380px;
+    max-height: 600px;
+    background: linear-gradient(145deg, #1e1e3a, #12122a);
+    border: 1px solid var(--jn-border);
+    border-radius: var(--jn-radius);
+    box-shadow: var(--jn-shadow), 0 0 40px var(--jn-accent-glow);
+    display: flex;
+    flex-direction: column;
+    z-index: 10000;
+    overflow: hidden;
+    animation: jn-panel-open 0.25s cubic-bezier(0.175,0.885,0.32,1.275);
+    transform-origin: top right;
+}
+
+@keyframes jn-panel-open {
+    from { opacity: 0; transform: scale(0.9) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+#jn-panel.jn-panel-closing {
+    animation: jn-panel-close 0.2s ease forwards;
+}
+
+@keyframes jn-panel-close {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.9) translateY(-10px); }
+}
+
+/* First-run guided tour */
+.jn-tour-highlight {
+    position: relative;
+    z-index: 10001;
+    outline: 2px solid var(--jn-accent);
+    outline-offset: 3px;
+    border-radius: var(--jn-radius-sm);
+    animation: jn-tour-highlight-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes jn-tour-highlight-pulse {
+    0%, 100% { outline-color: var(--jn-accent); }
+    50% { outline-color: var(--jn-accent-hover); }
+}
+
+#jn-tour-tooltip {
+    position: fixed;
+    z-index: 10002;
+    width: 260px;
+    background: linear-gradient(145deg, #1e1e3a, #12122a);
+    border: 1px solid var(--jn-border);
+    border-radius: var(--jn-radius);
+    box-shadow: var(--jn-shadow);
+    padding: 0.9rem 1rem;
+    animation: jn-tour-tooltip-in 0.2s ease;
+}
+
+@keyframes jn-tour-tooltip-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.jn-tour-text {
+    color: var(--jn-text);
+    font-size: 0.85rem;
+    line-height: 1.45;
+    margin-bottom: 0.75rem;
+}
+
+.jn-tour-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.jn-tour-step-count {
+    color: var(--jn-text-muted);
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.jn-tour-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.jn-tour-skip-btn {
+    background: none;
+    border: none;
+    color: var(--jn-text-muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0.3rem 0.4rem;
+}
+
+.jn-tour-skip-btn:hover {
+    color: var(--jn-text);
+}
+
+.jn-tour-next-btn {
+    background: linear-gradient(135deg, var(--jn-accent), var(--jn-accent-hover));
+    color: #fff;
+    border: none;
+    border-radius: var(--jn-radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+}
+
+/* Panel header */
+.jn-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--jn-border);
+    flex-shrink: 0;
+}
+
+.jn-panel-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--jn-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.jn-panel-title::before {
+    content: '🔔';
+    font-size: 1.1rem;
+}
+
+.jn-panel-actions {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.jn-panel-action-btn {
+    background: none;
+    border: none;
+    color: var(--jn-text-muted);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: var(--jn-radius-sm);
+    transition: all var(--jn-transition);
+}
+
+.jn-panel-action-btn:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--jn-text);
+}
+
+.jn-panel-close-btn {
+    background: none;
+    border: none;
+    color: var(--jn-text-muted);
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    transition: all var(--jn-transition);
+}
+
+.jn-panel-close-btn:hover {
+    background: rgba(231,76,60,0.15);
+    color: var(--jn-danger);
+}
+
+/* Notification list */
+.jn-notif-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--jn-accent) transparent;
+}
+
+.jn-notif-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.jn-notif-list::-webkit-scrollbar-thumb {
+    background: var(--jn-accent);
+    border-radius: 2px;
+}
+
+.jn-notif-empty {
+    text-align: center;
+    color: var(--jn-text-muted);
+    padding: 2rem 1rem;
+    font-size: 0.9rem;
+}
+
+.jn-notif-empty::before {
+    content: '✅';
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Notification item */
+.jn-notif-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: var(--jn-radius-sm);
+    margin-bottom: 0.4rem;
+    cursor: pointer;
+    transition: background var(--jn-transition);
+    position: relative;
+    animation: jn-fadein 0.3s ease;
+}
+
+.jn-notif-item:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.jn-notif-item.unread {
+    background: rgba(155, 89, 182, 0.08);
+    border-left: 3px solid var(--jn-accent);
+}
+
+.jn-notif-item.unread:hover {
+    background: rgba(155, 89, 182, 0.12);
+}
+
+.jn-notif-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    width: 2rem;
+    text-align: center;
+}
+
+.jn-notif-poster {
+    width: 2.5rem;
+    height: 3.75rem;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: var(--jn-radius-sm);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.jn-notif-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.jn-notif-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--jn-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.2rem;
+}
+
+.jn-notif-message {
+    font-size: 0.8rem;
+    color: var(--jn-text-muted);
+    line-height: 1.4;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.jn-notif-time {
+    font-size: 0.72rem;
+    color: var(--jn-text-muted);
+    margin-top: 0.3rem;
+    opacity: 0.7;
+}
+
+/* Toasts */
+#jn-toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 16px;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+    z-index: 99999;
+    pointer-events: none;
+}
+
+.jn-toast {
+    background: linear-gradient(135deg, #1e1e3a, #2a1a4a);
+    border: 1px solid var(--jn-border);
+    border-left: 4px solid var(--jn-accent);
+    border-radius: var(--jn-radius);
+    padding: 0.85rem 1.1rem;
+    min-width: 280px;
+    max-width: 360px;
+    box-shadow: var(--jn-shadow);
+    pointer-events: auto;
+    animation: jn-toast-in 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+    cursor: pointer;
+}
+
+.jn-toast:hover {
+    transform: translateX(-4px);
+    transition: transform 0.15s ease;
+}
+
+@keyframes jn-toast-in {
+    from { opacity: 0; transform: translateX(100%); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.jn-toast-dismiss {
+    animation: jn-toast-out 0.3s ease forwards;
+}
+
+@keyframes jn-toast-out {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(100%); }
+}
+
+.jn-toast-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--jn-text);
+    margin-bottom: 0.25rem;
+}
+
+.jn-toast-message {
+    font-size: 0.8rem;
+    color: var(--jn-text-muted);
+    line-height: 1.4;
+}
+
+/* Type-specific accent colors */
+.jn-toast[data-type="RequestApproved"],
+.jn-toast[data-type="MediaAvailable"] {
+    border-left-color: var(--jn-success);
+}
+
+.jn-toast[data-type="RequestDeclined"],
+.jn-toast[data-type="DownloadFailed"] {
+    border-left-color: var(--jn-danger);
+}
+
+.jn-toast[data-type="DownloadWarning"] {
+    border-left-color: var(--jn-warning);
+}
+
+.jn-toast[data-type="DownloadStarted"] {
+    border-left-color: var(--jn-info);
+}
+
+/* Panel footer */
+.jn-panel-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--jn-border);
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.jn-panel-footer-text {
+    font-size: 0.75rem;
+    color: var(--jn-text-muted);
+    opacity: 0.6;
+}
+
+/* User settings view in bell panel */
+.jn-user-settings-form {
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    color: var(--jn-text);
+}
+
+.jn-settings-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.jn-settings-label {
+    font-size: 0.78rem;
+    color: var(--jn-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.jn-settings-select {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--jn-border);
+    border-radius: var(--jn-radius-sm);
+    color: var(--jn-text);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.88rem;
+    transition: border-color var(--jn-transition);
+    width: 100%;
+}
+
+.jn-settings-select:focus {
+    outline: none;
+    border-color: var(--jn-accent);
+}
+
+.jn-settings-checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 0.5rem 0;
+}
+
+.jn-settings-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--jn-text);
+}
+
+.jn-settings-checkbox-label input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--jn-accent);
+    cursor: pointer;
+}
+
+.jn-settings-save-btn {
+    background: linear-gradient(135deg, var(--jn-accent), #3498db);
+    color: #fff;
+    border: none;
+    border-radius: var(--jn-radius-sm);
+    padding: 0.6rem 1rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--jn-transition);
+    text-align: center;
+}
+
+.jn-settings-save-btn:hover {
+    box-shadow: 0 4px 12px var(--jn-accent-glow);
+    transform: translateY(-1px);
+}
+
+.jn-settings-save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.jn-pref-msg {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--jn-radius-sm);
+    font-size: 0.82rem;
+    text-align: center;
+    animation: jn-fadein 0.25s ease;
+}
+
+.jn-pref-msg.success {
+    background: rgba(39, 174, 96, 0.12);
+    border: 1px solid rgba(39, 174, 96, 0.2);
+    color: #5dca82;
+}
+
+.jn-pref-msg.error {
+    background: rgba(231, 76, 60, 0.12);
+    border: 1px solid rgba(231, 76, 60, 0.2);
+    color: #e97b6e;
+}
+
+@media (max-width: 600px) {
+    #jn-panel {
+        top: 56px;
+        right: 8px;
+        left: 8px;
+        width: auto;
+        max-height: calc(100vh - 72px);
+    }
+
+    .jn-panel-header {
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .jn-panel-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .jn-field-half {
+        max-width: none;
+    }
+}
+
+/* ================================================================
+   Config page v1.0.3 — header, tabs, cards, diagnostics
+   ================================================================ */
+
+.jn-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem 0.25rem;
+}
+
+.jn-header-icon {
+    font-size: 2.5rem !important;
+    color: var(--jn-accent);
+    flex-shrink: 0;
+}
+
+.jn-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #9b59b6, #3498db);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 0.25rem;
+}
+
+.jn-subtitle {
+    color: var(--jn-text-muted);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.jn-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.4rem;
+    margin-bottom: 1.25rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--jn-border);
+    border-radius: var(--jn-radius);
+}
+
+.jn-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: transparent;
+    border: none;
+    color: var(--jn-text-muted);
+    padding: 0.55rem 1rem;
+    border-radius: var(--jn-radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--jn-transition);
+    white-space: nowrap;
+}
+
+.jn-tab-icon {
+    width: 1.05rem;
+    height: 1.05rem;
+    flex-shrink: 0;
+}
+
+.jn-tab-icon-material {
+    font-size: 1.05rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.jn-tab-btn:hover {
+    background: rgba(255,255,255,0.06);
+    color: var(--jn-text);
+}
+
+.jn-tab-btn.active {
+    background: linear-gradient(135deg, var(--jn-accent), #3498db);
+    color: #fff;
+}
+
+.jn-tab-panel.jn-hidden {
+    display: none;
+}
+
+.jn-hidden {
+    display: none !important;
+}
+
+.jn-card {
+    background: var(--jn-surface);
+    border: 1px solid var(--jn-border);
+    border-radius: var(--jn-radius);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+.jn-instances > .jn-card {
+    margin-bottom: 0;
+}
+
+.jn-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* Labeled divider marking where one themed group of fields ends and the next
+   begins (e.g. "core connection" vs. "instant notifications") — the card was
+   previously one flat, undifferentiated list of fields with no visual
+   grouping at all. */
+.jn-subhead {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.jn-subhead::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--jn-border);
+}
+
+.jn-subhead-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--jn-text-muted);
+    white-space: nowrap;
+}
+
+/* Groups the webhook status card, its explanatory hints, and the URL/button
+   row under one visual unit, with a tighter gap than the card's own
+   (top-level) sections. */
+.jn-webhook-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+/* The Copy webhook URL and Create webhook automatically buttons, side by
+   side with real spacing between them instead of being crammed into the
+   same inputContainer as the URL's own label. */
+.jn-btn-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.jn-sticky-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--jn-bg);
+    padding: 1rem 0;
+    border-top: 1px solid var(--jn-border);
+    margin-top: 0.5rem;
+}
+
+.jn-setup-guide {
+    background: var(--jn-surface-2);
+    border: 1px solid var(--jn-border);
+    border-radius: var(--jn-radius-sm);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.jn-setup-guide summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--jn-text);
+}
+
+.jn-setup-guide ol {
+    margin: 0.75rem 0 0.25rem;
+    padding-left: 1.25rem;
+    color: var(--jn-text-muted);
+}
+
+.jn-setup-guide li {
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.jn-setup-guide a {
+    color: var(--jn-info);
+}
+
+.jn-setup-guide code {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+}
+
+/* Per-field hints: short explanation + real-format example for the specific
+   inputs people get stuck on (which token goes where, ID vs. phone number,
+   etc.), shown right under that field rather than buried in the numbered
+   setup guide above. The warning variant is for prerequisites that block the
+   whole step if missed (e.g. the WhatsApp webhook needing a public HTTPS URL). */
+.jn-field-hint {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+    padding: 0.55rem 0.7rem;
+    background: rgba(155, 89, 182, 0.07);
+    border-left: 2px solid var(--jn-accent);
+    border-radius: 0 var(--jn-radius-sm) var(--jn-radius-sm) 0;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--jn-text-muted);
+}
+
+.jn-copy-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.jn-copy-row input {
+    flex: 1;
+    min-width: 0;
+}
+
+.jn-copy-btn.fab {
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    min-width: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.jn-copy-btn.raised {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: fit-content;
+}
+
+.jn-copy-btn .material-icons {
+    font-size: 1.1rem;
+}
+
+.jn-copy-btn.jn-copy-btn-done {
+    color: var(--jn-success, #2ecc71);
+}
+
+.jn-field-hint-warning {
+    background: rgba(243, 156, 18, 0.08);
+    border-left-color: var(--jn-warning);
+}
+
+.jn-field-hint-icon {
+    flex-shrink: 0;
+}
+
+.jn-field-hint code {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    padding: 0.05rem 0.3rem;
+    color: var(--jn-text);
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    font-size: 0.78rem;
+    word-break: break-all;
+}
+
+.jn-field-hint b {
+    color: var(--jn-text);
+}
+
+.jn-diag-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.jn-diag-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--jn-border);
+    border-radius: var(--jn-radius-sm);
+    padding: 0.75rem 0.9rem;
+}
+
+.jn-diag-label {
+    font-size: 0.75rem;
+    color: var(--jn-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.jn-diag-value {
+    font-size: 0.95rem;
+    color: var(--jn-text);
+    font-weight: 600;
+}
+
+.jn-diag-value.jn-ok {
+    color: var(--jn-success);
+}
+
+.jn-diag-value.jn-warn {
+    color: var(--jn-warning);
+}
+
+.jn-diag-value.jn-error {
+    color: var(--jn-danger);
+}
+
+.jn-refresh-notice {
+    background: rgba(243, 156, 18, 0.1);
+    border: 1px solid rgba(243, 156, 18, 0.3);
+    border-radius: var(--jn-radius-sm);
+    color: var(--jn-text);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.jn-plugin-desc {
+    color: var(--jn-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: -0.25rem 0 1.25rem;
+}
+
+.jn-overview-desc {
+    color: var(--jn-text-muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin: -0.5rem 0 1.25rem;
+}
+
+.jn-overview-heading {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--jn-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.6rem;
+}
+
+.jn-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.jn-overview-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--jn-border);
+    border-radius: var(--jn-radius-sm);
+    padding: 0.65rem 0.8rem;
+    opacity: 0.55;
+}
+
+.jn-overview-item.jn-overview-connected {
+    opacity: 1;
+    border-color: var(--jn-success);
+}
+
+.jn-overview-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+}
+
+.jn-overview-name {
+    font-weight: 600;
+    flex: 1;
+}
+
+.jn-overview-status-icon {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--jn-danger);
+    flex-shrink: 0;
+}
+
+.jn-overview-connected .jn-overview-status-icon {
+    color: var(--jn-success);
+}
+
+/* WhatsApp connect/disconnect in the bell panel settings view */
+[id$="-connect-row"] {
+    margin-bottom: 0.5rem;
+}
+
+.jn-whatsapp-connect-btn {
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    color: #fff;
+    border: none;
+    border-radius: var(--jn-radius-sm);
+    padding: 0.55rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.jn-whatsapp-disconnect-btn {
+    background: rgba(231, 76, 60, 0.15);
+    color: var(--jn-danger);
+    border: 1px solid rgba(231, 76, 60, 0.25);
+    border-radius: var(--jn-radius-sm);
+    padding: 0.55rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Shown instead of the normal gradient when the admin hasn't configured that
+   channel at all — still clickable (explains why via a message) but visually inert. */
+.jn-channel-btn-disabled {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.4);
+    cursor: not-allowed;
+}
+
+/* A single gap on .jn-card/.jn-webhook-group is the only source of spacing
+   between their direct children — every child's own margin (inputContainer,
+   checkbox labels, jn-field-hint, jn-actions, jn-overview-item...) is reset
+   here so two unrelated pieces are never squeezed together or doubled up
+   depending on which two happen to be adjacent. Placed last so it always
+   wins over each component's own same-specificity margin rule regardless of
+   where those are declared above. */
+.jn-card > *,
+.jn-webhook-group > * {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+

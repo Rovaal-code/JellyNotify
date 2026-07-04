@@ -1,0 +1,68 @@
+# ── .NET build outputs ────────────────────────────────────────────────
+bin/
+obj/
+dist/
+*.user
+*.suo
+*.userprefs
+*.userosscache
+*.sln.docstates
+.vs/
+
+# ── Publish outputs ───────────────────────────────────────────────────
+publish/
+out/
+
+# ── NuGet ────────────────────────────────────────────────────────────
+*.nupkg
+*.snupkg
+packages/
+*.lock.json
+!package-lock.json
+
+# ── Rider / JetBrains ────────────────────────────────────────────────
+.idea/
+*.DotSettings.user
+
+# ── VS Code ───────────────────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+
+# ── Temporales y logs ─────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# ── Dotnet tool install cache ─────────────────────────────────────────
+.dotnet/
+
+# ── Secretos / credenciales (nunca subir) ────────────────────────────
+*.env
+.env.*
+appsettings.*.json
+secrets.json
+**/secrets/**
+
+# ── Local reference material (research only, not part of this repo) ──
+# Jellyfin-Enhanced is a full external GPL-3.0 clone kept locally for reference;
+# the specific patterns adapted from it are already ported into JellyNotify.Plugin
+# and credited in NOTICE.md. It should not be committed into this repo's history.
+/Jellyfin-Enhanced/
+/references/
+
+# Reference repos kept locally for a possible future visual-style exploration —
+# not part of this repo, never to be committed/pushed.
+/downloads/
+
+# ── EXPLÍCITAMENTE NO IGNORADOS ───────────────────────────────────────
+# Los siguientes archivos SÍ deben incluirse en git:
+# - repository/manifest.json
+# - releases/*.zip
+# - README.md
+# - docs/
+# - scripts/
+# - build.sh

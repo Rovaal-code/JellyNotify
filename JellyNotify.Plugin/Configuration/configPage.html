@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JellyNotify</title>
+</head>
+<body>
+<div data-role="page" class="page type-interior pluginConfigurationPage" id="jellynotify-config-page"
+     data-require="emby-input,emby-checkbox,emby-select,emby-button">
+    <script>
+        // Relative <link>/<script src> tags resolve against the plugin-page iframe
+        // URL, not this plugin's resource namespace, and 404 silently — which is why
+        // earlier builds rendered as unstyled HTML. Load everything through
+        // ApiClient.getUrl(...) instead (same pattern Jellyfin Enhanced uses).
+        (function () {
+            var cssLink = document.createElement('link');
+            cssLink.rel = 'stylesheet';
+            cssLink.href = ApiClient.getUrl('/JellyNotify/Configuration/configPage.css');
+            document.head.appendChild(cssLink);
+        })();
+    </script>
+
+    <div data-role="content">
+        <div class="content-primary">
+            <div class="verticalSection jn-header">
+                <span class="material-icons jn-header-icon" aria-hidden="true">notifications_active</span>
+                <div>
+                    <h1 class="sectionTitle jn-title">JellyNotify</h1>
+                    <p class="jn-subtitle" data-i18n="config.subtitle">Personal notification system for Jellyfin — Serr, Sonarr, Radarr.</p>
+                </div>
+            </div>
+
+            <div class="jn-tabs" role="tablist">
+                <button type="button" class="jn-tab-btn active" data-tab="general"><span class="material-icons jn-tab-icon-material" aria-hidden="true">tune</span><span data-i18n="config.tabGeneral">General</span></button>
+                <button type="button" class="jn-tab-btn" data-tab="seerr"><img class="jn-tab-icon" id="seerr-tab-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/overseerr.svg" alt="" aria-hidden="true"><span data-i18n="config.tabSeerr">Serr</span></button>
+                <button type="button" class="jn-tab-btn" data-tab="sonarr"><img class="jn-tab-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sonarr.svg" alt="" aria-hidden="true"><span data-i18n="config.tabSonarr">Sonarr</span></button>
+                <button type="button" class="jn-tab-btn" data-tab="radarr"><img class="jn-tab-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radarr.svg" alt="" aria-hidden="true"><span data-i18n="config.tabRadarr">Radarr</span></button>
+                <button type="button" class="jn-tab-btn" data-tab="channels"><span class="material-icons jn-tab-icon-material" aria-hidden="true">hub</span><span data-i18n="config.tabChannels">Channels</span></button>
+                <button type="button" class="jn-tab-btn" data-tab="diagnostics"><span class="material-icons jn-tab-icon-material" aria-hidden="true">troubleshoot</span><span data-i18n="config.tabDiagnostics">Diagnostics</span></button>
+            </div>
+
+            <!-- ── General ─────────────────────────────────────────────── -->
+            <div class="jn-tab-panel" data-panel="general">
+                <div class="jn-refresh-notice" data-i18n="config.refreshNotice">If you just installed or updated JellyNotify and don't see the notification bell, or the plugin isn't showing under Plugins, refresh the page with Ctrl+R (or Cmd+R on Mac).</div>
+                <div class="verticalSection jn-card">
+                    <h2 class="sectionTitle" data-i18n="config.generalTitle">General</h2>
+                    <p class="jn-plugin-desc" data-i18n="config.pluginDesc">JellyNotify notifies you in real time about what's happening with your content requests: when they're created, approved or declined, how the download is going, and when it's finally available — right inside Jellyfin, and optionally on Telegram, Discord, or WhatsApp too.</p>
+                    <div class="jn-overview-heading" data-i18n="config.overviewTitle">Connected services</div>
+                    <div id="general-overview" class="jn-overview-grid"></div>
+                    <p class="jn-overview-desc" data-i18n="config.overviewDesc">To get notified about your requests (created, approved, declined, available...), connect Seerr. To know download progress, connect Sonarr (series) and Radarr (movies). If you also want these alerts to reach you outside the server, connect a Telegram, Discord, or WhatsApp bot from the notification bell's settings panel.</p>
+                    <div class="inputContainer">
+                        <label class="selectLabel" for="notif-language" data-i18n="config.defaultLanguageLabel">Default language</label>
+                        <select is="emby-select" id="notif-language" class="emby-select">
+                            <option value="auto" data-i18n="config.langAuto">Auto</option>
+                            <option value="es-ES">Español (Castellano)</option>
+                            <option value="ca">Català</option>
+                            <option value="en-US">English</option>
+                        </select>
+                        <div class="fieldDescription" data-i18n="config.autoLanguageDesc">Auto follows the language each Jellyfin user already has configured on the server.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="notif-retention-days" data-i18n="config.retentionLabel">Notification retention (days)</label>
+                        <input is="emby-input" type="number" id="notif-retention-days" min="0" max="3650" value="30">
+                        <div class="fieldDescription" data-i18n="config.retentionDesc">0 disables age-based purging.</div>
+                    </div>
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="notif-enabled" checked>
+                        <span data-i18n="config.notifEnabledLabel">Enable notifications</span>
+                    </label>
+                    <div class="fieldDescription" data-i18n="config.notifEnabledDesc">Master switch for every notification (in-app bell and all connected bots). Turn off to pause everything without disconnecting anything.</div>
+                    <div class="inputContainer jn-field-half">
+                        <label class="inputLabel" for="notif-dedup-window" data-i18n="config.dedupWindowLabel">Deduplication window (min)</label>
+                        <input is="emby-input" type="number" id="notif-dedup-window" value="10" min="1" max="60">
+                        <div class="fieldDescription" data-i18n="config.dedupWindowDesc">Prevents the same notification from being sent more than once within this many minutes — it stops duplicates, it never causes repeats.</div>
+                    </div>
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="script-injection-enabled" checked>
+                        <span data-i18n="config.webInjectionLabel">Enable global web injection (bell/panel in Jellyfin Web)</span>
+                    </label>
+                    <div class="fieldDescription" data-i18n="config.webInjectionDesc">Disable only for troubleshooting — the bell will not appear anywhere if this is off.</div>
+                    <div class="jn-actions">
+                        <button is="emby-button" type="button" class="raised" id="test-notification-btn" data-i18n="config.sendTestNotifBtn">Send test notification</button>
+                    </div>
+                    <div id="test-notification-result" class="jn-result-msg jn-hidden"></div>
+                </div>
+            </div>
+
+            <!-- ── Serr (Jellyseerr / Overseerr) ───────────────────────── -->
+            <div class="jn-tab-panel jn-hidden" data-panel="seerr">
+                <div class="verticalSection jn-card">
+                    <div class="jn-card-header">
+                        <h2 class="sectionTitle jn-section-title-icon"><img class="jn-section-icon" id="seerr-section-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/overseerr.svg" alt="" aria-hidden="true"><span data-i18n="config.seerrTitle">Serr</span></h2>
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="seerr-enabled">
+                            <span data-i18n="config.enabledLabel">Enabled</span>
+                        </label>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="selectLabel" for="seerr-type" data-i18n="config.serverTypeLabel">Server type</label>
+                        <select is="emby-select" id="seerr-type" class="emby-select">
+                            <option value="0">Overseerr</option>
+                            <option value="1">Jellyseerr</option>
+                        </select>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="seerr-url" data-i18n="config.serverUrlLabel">Server URL</label>
+                        <input is="emby-input" type="url" id="seerr-url" placeholder="http://localhost:5055">
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="seerr-apikey" data-i18n="config.apiKeyLabel">API key</label>
+                        <input is="emby-input" type="password" id="seerr-apikey" placeholder="Your Seerr API key" data-i18n-placeholder="config.seerrApiKeyPlaceholder" autocomplete="off">
+                    </div>
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="seerr-ignore-ssl">
+                        <span data-i18n="config.ignoreSslLabel">Ignore SSL certificate errors</span>
+                    </label>
+                    <div class="jn-field-hint"><span class="jn-field-hint-icon">⚡</span><span data-i18n="config.seerrNoPollingHint">Seerr notifies JellyNotify instantly via webhook — there's no polling interval to set. A single check runs once when Jellyfin starts, only to catch up on anything that changed while it was off.</span></div>
+
+                    <div class="jn-subhead"><span class="jn-subhead-label" data-i18n="config.instantNotificationsSubhead">Instant notifications</span></div>
+                    <div class="jn-webhook-group">
+                        <div class="jn-overview-item jn-webhook-connection-status" id="seerr-webhook-connection-status">
+                            <span class="jn-overview-name" data-i18n="config.seerrWebhookToggleLabel">Instant notifications via webhook</span>
+                            <span class="jn-overview-status-icon"></span>
+                        </div>
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">ℹ️</span><span data-i18n="config.seerrWebhookNotConfiguredHint">With this on, Seerr tells JellyNotify the instant a request's status changes (approved, available, declined...). If you skip this step, JellyNotify only catches up on Seerr changes once, when Jellyfin starts — request status changes won't be noticed again until the next restart.</span></div>
+                        <div class="inputContainer">
+                            <label class="inputLabel" data-i18n="config.seerrWebhookUrlLabel">Webhook URL (paste this into Overseerr/Jellyseerr → Settings → Notifications → Webhook)</label>
+                            <div class="jn-btn-row">
+                                <button is="emby-button" type="button" class="raised jn-copy-btn" id="seerr-webhook-copy-btn">
+                                    <span class="material-icons" aria-hidden="true">content_copy</span>
+                                    <span data-i18n="config.copyWebhookBtn">Copy webhook URL</span>
+                                </button>
+                                <button is="emby-button" type="button" class="raised" id="seerr-webhook-autoconfig-btn" data-i18n="config.autoConfigureWebhookBtn">Create webhook automatically</button>
+                            </div>
+                        </div>
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">🪄</span><span data-i18n="config.autoConfigureWebhookHint">Tries to configure this for you directly in Seerr using the API key above. If it can't (older version, network, permissions), nothing breaks — the Copy webhook URL button above is always there as a manual fallback.</span></div>
+                        <div id="seerr-webhook-autoconfig-result" class="jn-result-msg jn-hidden"></div>
+                        <div class="jn-field-hint jn-webhook-status" id="seerr-webhook-status"></div>
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">📋</span><span data-i18n-html="config.seerrWebhookPayloadHint">Only relevant if you set this up manually: you can leave Seerr's default JSON payload template as-is — just make sure it still includes the <code>request.request_id</code> field, which is all this plugin reads (the rest of the payload is ignored; JellyNotify always re-checks the request's current status directly with Seerr).</span></div>
+                        <div class="jn-field-hint jn-field-hint-warning"><span class="jn-field-hint-icon">⚠️</span><span data-i18n-html="config.seerrWebhookWarning">Seerr needs to be able to reach this address from wherever it's running, over HTTPS with a valid certificate (a self-signed one won't work) if Seerr and Jellyfin aren't on the same local network. If your Jellyfin is only reachable on a local address like <code>192.168.x.x</code>, this only works if Seerr runs on that same network too.</span></div>
+                    </div>
+
+                    <div class="jn-subhead"><span class="jn-subhead-label" data-i18n="config.checkSubhead">Check</span></div>
+                    <div class="jn-actions">
+                        <button is="emby-button" type="button" class="raised button-submit" id="seerr-test-btn" data-i18n="config.testConnectionBtn">Test connection</button>
+                        <button is="emby-button" type="button" class="raised" id="seerr-sample-btn" data-i18n="config.sampleNotifBtn">Sample notification</button>
+                    </div>
+                    <div id="seerr-test-result" class="jn-result-msg jn-hidden"></div>
+                    <div id="seerr-webhook-capability-result" class="jn-result-msg jn-hidden"></div>
+                </div>
+            </div>
+
+            <!-- ── Sonarr ───────────────────────────────────────────────── -->
+            <div class="jn-tab-panel jn-hidden" data-panel="sonarr">
+                <div class="verticalSection jn-card">
+                    <div class="jn-card-header">
+                        <h2 class="sectionTitle jn-section-title-icon"><img class="jn-section-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/sonarr.svg" alt="" aria-hidden="true"><span data-i18n="config.sonarrTitle">Sonarr instances</span></h2>
+                        <button is="emby-button" type="button" class="raised" id="sonarr-add-btn" data-i18n="config.addInstanceBtn">+ Add instance</button>
+                    </div>
+                    <div id="sonarr-instances" class="jn-instances"></div>
+                </div>
+            </div>
+
+            <!-- ── Radarr ───────────────────────────────────────────────── -->
+            <div class="jn-tab-panel jn-hidden" data-panel="radarr">
+                <div class="verticalSection jn-card">
+                    <div class="jn-card-header">
+                        <h2 class="sectionTitle jn-section-title-icon"><img class="jn-section-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/radarr.svg" alt="" aria-hidden="true"><span data-i18n="config.radarrTitle">Radarr instances</span></h2>
+                        <button is="emby-button" type="button" class="raised" id="radarr-add-btn" data-i18n="config.addInstanceBtn">+ Add instance</button>
+                    </div>
+                    <div id="radarr-instances" class="jn-instances"></div>
+                </div>
+            </div>
+
+            <!-- ── Channels ─────────────────────────────────────────────── -->
+            <div class="jn-tab-panel jn-hidden" data-panel="channels">
+                <div class="verticalSection jn-card">
+                    <div class="jn-card-header">
+                        <h2 class="sectionTitle jn-section-title-icon"><img class="jn-section-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/discord.svg" alt="" aria-hidden="true"><span>Discord</span></h2>
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="discord-enabled">
+                            <span data-i18n="config.enabledLabel">Enabled</span>
+                        </label>
+                    </div>
+                    <details class="jn-setup-guide">
+                        <summary data-i18n="config.setupGuideSummary">How to set this up (step by step)</summary>
+                        <ol data-i18n-html="config.discordSetupSteps">
+                            <li>Go to the <a href="https://discord.com/developers/applications" target="_blank" rel="noopener">Discord Developer Portal</a> and click <strong>New Application</strong>.</li>
+                            <li>Open the <strong>Bot</strong> tab, click <strong>Reset Token</strong>, and copy it into <strong>Bot token</strong> below.</li>
+                            <li>Open the <strong>OAuth2</strong> tab and copy the <strong>Client ID</strong> and <strong>Client Secret</strong> into the matching fields below.</li>
+                            <li>Still on the <strong>OAuth2</strong> tab, under <strong>Redirects</strong>, add the exact URL shown in <strong>OAuth redirect URI</strong> below, then save it there too.</li>
+                            <li>Save the configuration here first, then click <strong>Invite bot to my server</strong> and add the bot to a Discord server where your Jellyfin users already are — Discord requires this before the bot can DM anyone.</li>
+                            <li>Users can now click <strong>Connect Discord</strong> from the notification bell's settings panel.</li>
+                        </ol>
+                    </details>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="discord-webhook" data-i18n="config.discordWebhookLabel">Webhook URL (global, admin-only broadcast)</label>
+                        <input is="emby-input" type="password" id="discord-webhook" placeholder="https://discord.com/api/webhooks/..." autocomplete="off">
+                        <div class="jn-field-hint jn-field-hint-warning"><span class="jn-field-hint-icon">⚠️</span><span data-i18n-html="config.discordWebhookHint">Created from <b>Server Settings → Integrations → Webhooks</b> in Discord — not the Developer Portal, which is for the next step. Example: <code>https://discord.com/api/webhooks/123456789012345678/AbCdEfGh...</code></span></div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="discord-botname" data-i18n="config.discordBotNameLabel">Bot name</label>
+                        <input is="emby-input" type="text" id="discord-botname" placeholder="JellyNotify">
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="discord-color" data-i18n="config.discordColorLabel">Embed color (hex)</label>
+                        <input is="emby-input" type="text" id="discord-color" placeholder="#AA5CC3">
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="discord-bottoken" data-i18n="config.discordBotTokenLabel">Bot token (enables personal Discord for users)</label>
+                        <input is="emby-input" type="password" id="discord-bottoken" placeholder="Your Discord bot token" data-i18n-placeholder="config.discordBotTokenPlaceholder" autocomplete="off">
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">💬</span><span data-i18n-html="config.discordBotTokenHint"><b>Bot</b> tab of the Developer Portal → <b>Reset Token</b>. It's a long string — copy it exactly, it's only shown once.</span></div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="discord-clientid" data-i18n="config.discordClientIdLabel">Client ID</label>
+                        <input is="emby-input" type="text" id="discord-clientid" placeholder="Your Discord application's Client ID" data-i18n-placeholder="config.discordClientIdPlaceholder">
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">💬</span><span data-i18n-html="config.discordClientIdHint"><b>OAuth2</b> tab of the Developer Portal, just a number. Example: <code>123456789012345678</code></span></div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="discord-clientsecret" data-i18n="config.discordClientSecretLabel">Client Secret</label>
+                        <input is="emby-input" type="password" id="discord-clientsecret" placeholder="Your Discord application's Client Secret" data-i18n-placeholder="config.discordClientSecretPlaceholder" autocomplete="off">
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">💬</span><span data-i18n-html="config.discordClientSecretHint">Right next to the Client ID, same <b>OAuth2</b> tab. Treat it like a password.</span></div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" data-i18n="config.discordRedirectLabel">OAuth redirect URI (add this in Discord's OAuth2 → Redirects)</label>
+                        <input is="emby-input" type="text" id="discord-redirect-uri" readonly>
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">💬</span><span data-i18n-html="config.discordRedirectHint">Auto-filled from the address you're using right now to view this page — it does not need to be public or use HTTPS, since your own browser follows this link, Discord's servers never call it directly. If people also connect from a different address (a public domain, for example, while you're on a local IP), add that address's callback URL here too, as a separate entry in Discord's Redirects list — it must match exactly whichever one was used, or Discord will reject it.</span></div>
+                    </div>
+                    <div class="fieldDescription" data-i18n="config.discordDesc">The webhook above is a global/admin-only broadcast. The bot token + Client ID/Secret together unlock "Connect Discord" in every user's notification panel — the bot must share a server with each user it DMs (Discord's own anti-spam rule).</div>
+                    <div class="jn-actions">
+                        <button is="emby-button" type="button" class="raised" id="discord-test-btn" data-i18n="config.discordTestBtn">Test webhook</button>
+                        <button is="emby-button" type="button" class="raised" id="discord-invite-btn" data-i18n="config.discordInviteBtn">Invite bot to my server</button>
+                    </div>
+                    <div id="discord-test-result" class="jn-result-msg jn-hidden"></div>
+                </div>
+
+                <div class="verticalSection jn-card">
+                    <div class="jn-card-header">
+                        <h2 class="sectionTitle jn-section-title-icon"><img class="jn-section-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/telegram.svg" alt="" aria-hidden="true"><span>Telegram</span></h2>
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="telegram-enabled">
+                            <span data-i18n="config.enabledLabel">Enabled</span>
+                        </label>
+                    </div>
+                    <details class="jn-setup-guide">
+                        <summary data-i18n="config.setupGuideSummary">How to set this up (step by step)</summary>
+                        <ol data-i18n-html="config.telegramSetupSteps">
+                            <li>Open Telegram and start a chat with <strong>@BotFather</strong>.</li>
+                            <li>Send <code>/newbot</code> and follow the prompts to choose a name and a username (must end in "bot").</li>
+                            <li>BotFather replies with a token — copy it into <strong>Bot token</strong> below.</li>
+                            <li>Copy the bot's @username (without the @) into <strong>Bot username</strong> below.</li>
+                            <li>Save the configuration. Users can now click <strong>Connect Telegram</strong> from the notification bell's settings panel — it opens a chat with your bot; tapping Start finishes the connection automatically.</li>
+                        </ol>
+                    </details>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="telegram-token" data-i18n="config.telegramTokenLabel">Bot token</label>
+                        <input is="emby-input" type="password" id="telegram-token" placeholder="123456:ABC-DEF..." autocomplete="off">
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">💬</span><span data-i18n-html="config.telegramTokenHint">@BotFather gives you this right after creating the bot with <code>/newbot</code>. Example: <code>123456789:AAExampleTokenXXXXXXXXXXXXXXXXXXXXX</code></span></div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="telegram-botusername" data-i18n="config.telegramUsernameLabel">Bot username (without @)</label>
+                        <input is="emby-input" type="text" id="telegram-botusername" placeholder="MyJellyfinBot">
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">💬</span><span data-i18n-html="config.telegramUsernameHint">The username you gave the bot in BotFather, without the @ symbol. Example: <code>MyServerBot</code></span></div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="telegram-chatid" data-i18n="config.telegramChatIdLabel">Global chat ID (optional)</label>
+                        <div class="jn-field-row">
+                            <input is="emby-input" type="text" id="telegram-chatid" placeholder="-1001234567890" class="jn-field-grow">
+                            <button is="emby-button" type="button" class="raised" id="telegram-detect-chatid-btn" data-i18n="config.telegramDetectBtn">Detect automatically</button>
+                        </div>
+                        <div class="fieldDescription" data-i18n="config.telegramDetectDesc">Open a chat with your bot in Telegram, send it any message, wait a few seconds, then click Detect automatically. If nothing is found, send another message to the bot first and try again.</div>
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">💬</span><span data-i18n-html="config.telegramChatIdHint">Only needed for the admin's own test button — each user connects their personal account from the bell without needing this. Group chat IDs start with <code>-100</code>.</span></div>
+                        <div id="telegram-detect-result" class="jn-result-msg jn-hidden"></div>
+                    </div>
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="telegram-silent">
+                        <span data-i18n="config.telegramSilentLabel">Silent messages</span>
+                    </label>
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="telegram-no-preview">
+                        <span data-i18n="config.telegramNoPreviewLabel">Disable link previews</span>
+                    </label>
+                    <div class="fieldDescription" data-i18n="config.telegramDesc">Users connect from the notification panel with one click — it opens a chat with your bot, and tapping Start finishes the connection automatically (no ID to type).</div>
+                    <div class="jn-actions">
+                        <button is="emby-button" type="button" class="raised" id="telegram-test-btn" data-i18n="config.telegramTestBtn">Test (Global chat ID)</button>
+                    </div>
+                    <div id="telegram-test-result" class="jn-result-msg jn-hidden"></div>
+                </div>
+
+                <div class="verticalSection jn-card">
+                    <div class="jn-card-header">
+                        <h2 class="sectionTitle jn-section-title-icon"><img class="jn-section-icon" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/whatsapp.svg" alt="" aria-hidden="true"><span>WhatsApp</span></h2>
+                        <label class="emby-checkbox-label">
+                            <input is="emby-checkbox" type="checkbox" id="whatsapp-enabled">
+                            <span data-i18n="config.enabledLabel">Enabled</span>
+                        </label>
+                    </div>
+                    <details class="jn-setup-guide">
+                        <summary data-i18n="config.setupGuideSummary">How to set this up (step by step)</summary>
+                        <ol data-i18n-html="config.whatsappSetupSteps">
+                            <li>Create a free account at <a href="https://developers.facebook.com" target="_blank" rel="noopener">developers.facebook.com</a> (Meta for Developers).</li>
+                            <li>Click <strong>My Apps → Create App</strong>, choose the <strong>Business</strong> type, and add the <strong>WhatsApp</strong> product when prompted.</li>
+                            <li>Open <strong>WhatsApp → API Setup</strong>. Meta gives you a free test number here — copy its <strong>Phone Number ID</strong> and the temporary <strong>Access Token</strong> into the fields below (a permanent token needs a System User, see Meta's docs; the temporary one works fine to get started but expires after 24h).</li>
+                            <li>Also copy the test number itself (E.164, no leading +) into <strong>Admin/bot WhatsApp number</strong> below.</li>
+                            <li>Make up any random text and put it in <strong>Verify Token</strong> below — it's just a shared password between JellyNotify and Meta, not sensitive.</li>
+                            <li>Save the configuration here first, then go to <strong>WhatsApp → Configuration</strong> in Meta, click <strong>Edit</strong> next to Webhook, and paste in the <strong>Webhook URL</strong> shown below plus the same Verify Token you just chose.</li>
+                            <li>Still in that Meta screen, click <strong>Manage</strong> next to "Webhook fields" and subscribe to <strong>messages</strong>.</li>
+                            <li>On Meta's free tier you can only message up to 5 phone numbers, added manually under API Setup → "To" — add your own number there while testing. For a real server with many users, you'll need to verify your business and get a production number.</li>
+                        </ol>
+                    </details>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="whatsapp-phone" data-i18n="config.whatsappPhoneLabel">Admin/bot WhatsApp number (E.164, no leading +)</label>
+                        <input is="emby-input" type="text" id="whatsapp-phone" placeholder="34600123456">
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">💬</span><span data-i18n-html="config.whatsappPhoneHint">The number Meta gives you (or your production number later), in international format but without the + symbol. Example: <code>34612345678</code></span></div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="whatsapp-access-token" data-i18n="config.whatsappAccessTokenLabel">Cloud API access token</label>
+                        <input is="emby-input" type="password" id="whatsapp-access-token" placeholder="Your Meta access token" data-i18n-placeholder="config.whatsappAccessTokenPlaceholder" autocomplete="off">
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">💬</span><span data-i18n-html="config.whatsappAccessTokenHint">Copied from <b>WhatsApp → API Setup</b> in Meta. The one shown there by default is temporary (expires in 24h); a permanent one needs a System User.</span></div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="whatsapp-phone-number-id" data-i18n="config.whatsappPhoneNumberIdLabel">Cloud API Phone Number ID</label>
+                        <input is="emby-input" type="text" id="whatsapp-phone-number-id" placeholder="From Meta's WhatsApp API Setup page" data-i18n-placeholder="config.whatsappPhoneNumberIdPlaceholder">
+                        <div class="jn-field-hint jn-field-hint-warning"><span class="jn-field-hint-icon">⚠️</span><span data-i18n-html="config.whatsappPhoneNumberIdHint">This is <b>not</b> the phone number — it's a separate numeric ID on that same Meta page. Example: <code>123456789012345</code></span></div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="whatsapp-verify-token" data-i18n="config.whatsappVerifyTokenLabel">Verify token</label>
+                        <input is="emby-input" type="text" id="whatsapp-verify-token" placeholder="Any random string — must match Meta's webhook config" data-i18n-placeholder="config.whatsappVerifyTokenPlaceholder">
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">💬</span><span data-i18n-html="config.whatsappVerifyTokenHint">You make this up yourself — it just needs to match whatever you enter in Meta's webhook config. Example: <code>jellynotify-verify-2026</code></span></div>
+                    </div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" data-i18n="config.whatsappWebhookLabel">Webhook URL (paste this into Meta's WhatsApp → Configuration → Webhook)</label>
+                        <div class="jn-copy-row">
+                            <input is="emby-input" type="text" id="whatsapp-webhook-url" readonly>
+                            <button is="emby-button" type="button" class="fab jn-copy-btn" id="whatsapp-webhook-copy-btn" data-i18n-title="config.copyBtnLabel" title="Copy">
+                                <span class="material-icons" aria-hidden="true">content_copy</span>
+                            </button>
+                        </div>
+                        <div class="jn-field-hint"><span class="jn-field-hint-icon">💬</span><span data-i18n-html="config.whatsappWebhookHint">Already filled in by the plugin — nothing to type here. Save this configuration first, then copy it into Meta along with the same Verify Token above.</span></div>
+                        <div class="jn-field-hint jn-field-hint-warning"><span class="jn-field-hint-icon">⚠️</span><span data-i18n-html="config.whatsappWebhookWarning">Meta needs to be able to reach this address from the internet, over HTTPS with a valid certificate (a self-signed one won't work). If your Jellyfin is only reachable on your local network (an address like <code>192.168.x.x</code> or similar) or has no real certificate, this URL won't work and subscribing to the webhook will fail in Meta. You'll need to expose the server to the internet with a real domain and certificate (port forwarding, a reverse proxy, or a tunnel like Cloudflare Tunnel) before this step can be completed.</span></div>
+                    </div>
+                    <div class="fieldDescription" data-i18n="config.whatsappDesc">Without the Cloud API fields above, WhatsApp is link-only: users can message your number, but the bot can't reply automatically (no welcome message, no real notifications). Fill them in to make WhatsApp a fully working channel.</div>
+                    <div class="jn-actions">
+                        <button is="emby-button" type="button" class="raised" id="whatsapp-test-btn" data-i18n="config.testConnectionBtn">Test</button>
+                    </div>
+                    <div id="whatsapp-test-result" class="jn-result-msg jn-hidden"></div>
+                </div>
+            </div>
+
+            <!-- ── Diagnostics ──────────────────────────────────────────── -->
+            <div class="jn-tab-panel jn-hidden" data-panel="diagnostics">
+                <div class="verticalSection jn-card">
+                    <h2 class="sectionTitle" data-i18n="config.diagTitle">Diagnostics</h2>
+                    <div id="diag-grid" class="jn-diag-grid">
+                        <div class="jn-diag-item"><span class="jn-diag-label" data-i18n="config.diagPluginVersion">Plugin version</span><span class="jn-diag-value" id="diag-version">—</span></div>
+                        <div class="jn-diag-item"><span class="jn-diag-label" data-i18n="config.diagUpdate">GitHub update</span><span class="jn-diag-value" id="diag-update">—</span></div>
+                        <div class="jn-diag-item"><span class="jn-diag-label" data-i18n="config.diagInjection">Web injection</span><span class="jn-diag-value" id="diag-injection">—</span></div>
+                        <div class="jn-diag-item"><span class="jn-diag-label" data-i18n="config.diagServerVersion">Server version</span><span class="jn-diag-value" id="diag-server-version">—</span></div>
+                        <div class="jn-diag-item"><span class="jn-diag-label" data-i18n="config.diagLastSync">Last sync (success)</span><span class="jn-diag-value" id="diag-last-sync">—</span></div>
+                        <div class="jn-diag-item"><span class="jn-diag-label" data-i18n="config.diagLastError">Last sync error</span><span class="jn-diag-value" id="diag-last-error">—</span></div>
+                        <div class="jn-diag-item"><span class="jn-diag-label" data-i18n="config.diagNotifCount">Total notifications stored</span><span class="jn-diag-value" id="diag-notif-count">—</span></div>
+                    </div>
+                    <div class="jn-actions">
+                        <button is="emby-button" type="button" class="raised" id="diag-refresh-btn" data-i18n="config.diagRefreshBtn">Refresh</button>
+                        <button is="emby-button" type="button" class="raised" id="sync-now-btn" data-i18n="config.diagSyncNowBtn">Run sync now</button>
+                        <button is="emby-button" type="button" class="raised" id="reset-baseline-btn" data-i18n="config.diagResetBtn">Reset baseline</button>
+                    </div>
+                    <div id="diag-result" class="jn-result-msg jn-hidden"></div>
+                </div>
+            </div>
+
+            <div class="jn-actions jn-sticky-actions">
+                <button is="emby-button" type="submit" class="raised button-submit block" id="save-config-btn" data-i18n="config.saveConfigBtn">Save configuration</button>
+            </div>
+            <div id="save-result" class="jn-result-msg jn-hidden"></div>
+
+        </div>
+
+        <!-- Jellyfin Web's SPA router extracts only the #jellynotify-config-page
+             subtree from this document and discards any siblings outside it — a
+             <template> or <script> placed after this div's closing tag is silently
+             dropped and never runs. Both must live inside the page div. -->
+        <template id="arr-instance-template">
+            <div class="jn-arr-instance verticalSection jn-card" data-instance-id="">
+                <div class="jn-card-header">
+                    <span class="jn-arr-instance-name" data-i18n="config.newInstanceLabel">New instance</span>
+                    <div class="jn-arr-instance-actions">
+                        <label class="emby-checkbox-label jn-toggle-small">
+                            <input is="emby-checkbox" type="checkbox" class="arr-enabled" checked>
+                            <span data-i18n="config.enabledLabel">Enabled</span>
+                        </label>
+                        <button is="emby-button" type="button" class="fab jn-btn-danger arr-delete-btn" title="Delete">
+                            <span class="material-icons" aria-hidden="true">delete</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="inputContainer">
+                    <label class="inputLabel" data-i18n="config.instanceNameLabel">Name</label>
+                    <input is="emby-input" type="text" class="arr-name" placeholder="Example: Main Sonarr" data-i18n-placeholder="config.instanceNamePlaceholder">
+                </div>
+                <div class="inputContainer">
+                    <label class="inputLabel" data-i18n="config.serverUrlLabel">Server URL</label>
+                    <input is="emby-input" type="url" class="arr-url" placeholder="http://localhost:8989">
+                </div>
+                <div class="inputContainer">
+                    <label class="inputLabel" data-i18n="config.apiKeyLabel">API key</label>
+                    <input is="emby-input" type="password" class="arr-apikey" placeholder="Your API key" data-i18n-placeholder="config.apiKeyPlaceholder" autocomplete="off">
+                </div>
+                <label class="emby-checkbox-label">
+                    <input is="emby-checkbox" type="checkbox" class="arr-ignore-ssl">
+                    <span data-i18n="config.ignoreSslLabel">Ignore SSL certificate errors</span>
+                </label>
+                <div class="inputContainer jn-field-half">
+                    <label class="selectLabel" data-i18n="config.pollingIntervalLabel">Polling interval (sec)</label>
+                    <select is="emby-select" class="arr-polling emby-select">
+                        <option value="30">30s</option>
+                        <option value="60">60s</option>
+                        <option value="90">90s</option>
+                        <option value="120">120s</option>
+                        <option value="150">150s</option>
+                        <option value="180">180s</option>
+                        <option value="210">210s</option>
+                        <option value="240">240s</option>
+                        <option value="270">270s</option>
+                        <option value="300">300s</option>
+                    </select>
+                    <div class="fieldDescription" data-i18n="config.arrPollingIntervalDesc">Only used to check download progress and catch stalled/failed downloads — Sonarr/Radarr have no webhook for that. Availability itself arrives instantly via the webhook below, regardless of this setting.</div>
+                </div>
+
+                <div class="jn-subhead"><span class="jn-subhead-label" data-i18n="config.instantNotificationsSubhead">Instant notifications</span></div>
+                <div class="jn-webhook-group">
+                    <div class="jn-overview-item jn-webhook-connection-status arr-webhook-connection-status">
+                        <span class="jn-overview-name" data-i18n="config.arrWebhookToggleLabel">Instant notifications via webhook</span>
+                        <span class="jn-overview-status-icon"></span>
+                    </div>
+                    <div class="jn-field-hint"><span class="jn-field-hint-icon">ℹ️</span><span data-i18n="config.arrWebhookNotConfiguredHint">With this on, the instance tells JellyNotify the moment it grabs a release ("download started" arrives instantly, whether Sonarr/Radarr found it automatically or you searched for one by hand) and the moment it's imported ("available" arrives instantly too, with audio/subtitle languages included). If you skip this step, JellyNotify won't be told about newly available content from this instance at all — there is no fallback polling for availability, only for download progress. This same toggle and URL are shared across every Sonarr/Radarr instance — turning it on or off here does the same everywhere.</span></div>
+                    <div class="inputContainer">
+                        <label class="inputLabel" data-i18n="config.arrWebhookUrlLabel">Webhook URL (paste this into this instance's Settings → Connect → add a Webhook)</label>
+                        <div class="jn-btn-row">
+                            <button is="emby-button" type="button" class="raised jn-copy-btn arr-webhook-copy-btn">
+                                <span class="material-icons" aria-hidden="true">content_copy</span>
+                                <span data-i18n="config.copyWebhookBtn">Copy webhook URL</span>
+                            </button>
+                            <button is="emby-button" type="button" class="raised arr-webhook-autoconfig-btn" data-i18n="config.autoConfigureWebhookBtn">Create webhook automatically</button>
+                        </div>
+                    </div>
+                    <div class="jn-field-hint"><span class="jn-field-hint-icon">🪄</span><span data-i18n="config.arrAutoConfigureSharedHint">Tries to create this connection for you directly in this instance using its API key above, and enables the shared toggle above (affects every Sonarr/Radarr instance, same as toggling it by hand). If it can't (older version, network, permissions), nothing breaks — the Copy webhook URL button above is always there as a manual fallback.</span></div>
+                    <div class="arr-webhook-autoconfig-result jn-result-msg jn-hidden"></div>
+                    <div class="jn-field-hint jn-webhook-status arr-webhook-status"></div>
+                </div>
+
+                <div class="jn-subhead"><span class="jn-subhead-label" data-i18n="config.checkSubhead">Check</span></div>
+                <div class="jn-actions">
+                    <button is="emby-button" type="button" class="raised arr-test-btn" data-i18n="config.testConnectionBtn">Test</button>
+                    <button is="emby-button" type="button" class="raised arr-sample-btn" data-i18n="config.sampleNotifBtn">Sample notification</button>
+                </div>
+                <div class="arr-test-result jn-result-msg jn-hidden"></div>
+                <div class="arr-webhook-capability-result jn-result-msg jn-hidden"></div>
+                <div class="arr-sample-result jn-result-msg jn-hidden"></div>
+            </div>
+        </template>
+
+        <script>
+            (function () {
+                var script = document.createElement('script');
+                script.src = ApiClient.getUrl('/JellyNotify/Configuration/configPage.js');
+                document.body.appendChild(script);
+            })();
+        </script>
+    </div>
+</div>
+</body>
+</html>
