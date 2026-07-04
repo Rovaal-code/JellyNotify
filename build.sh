@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$SCRIPT_DIR/JellyNotify.Plugin"
 OUTPUT_DIR="$SCRIPT_DIR/dist"
 RELEASES_DIR="$SCRIPT_DIR/releases"
-VERSION="0.1.0.0"
+VERSION="0.1.0.1"
 if [[ -x "/home/alvaro/.dotnet/dotnet" ]]; then
     export PATH="$PATH:/home/alvaro/.dotnet"
 fi
@@ -101,11 +101,12 @@ filepath = sys.argv[3]
 timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 version_tag = version[:-2] if version.endswith('.0') else version
 source_url = f'https://github.com/Rovaal-code/JellyNotify/releases/download/v{version_tag}/jellynotify_{version}.zip'
-changelog = '''JellyNotify v0.1.0.0 - initial release
+changelog = '''JellyNotify v0.1.0.1 - new holographic visual style
 
 Compatible with Jellyfin 10.11.11 (the version this build targets and was verified against), Seerr 3.3.0, Radarr 6.1.1.10360, Sonarr 4.0.17.2952, and Jellyfin Enhanced 11.12.0.0.
 
-Per-user Jellyfin notifications with a bell, unread badge, notification panel, and toast alerts. Integrates with Overseerr/Jellyseerr, Sonarr, and Radarr via instant webhooks, with Discord, Telegram, and WhatsApp delivery.'''
+- Full visual restyle of the config page and the bell/panel/toasts: glass cards with a violet-to-cyan gradient border, a self-hosted Orbitron/Exo 2 font pairing, glowing status pills with a live pulse, and an animated aurora background on the config page.
+- No functional changes - every id, class, and behavior JS depends on stayed exactly the same, this is CSS/markup only.'''
 with open(filepath, 'r', encoding='utf-8') as f:
     data = json.load(f)
 for plugin in data:
