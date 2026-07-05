@@ -142,12 +142,12 @@ public static class NotificationCardFormatter
 
         if (!string.IsNullOrWhiteSpace(n.AudioLanguages))
         {
-            fields.Add(("🔊", t.Audio, n.AudioLanguages));
+            fields.Add(("🔊", t.Audio, TruncateLanguageList(n.AudioLanguages)));
         }
 
         if (!string.IsNullOrWhiteSpace(n.SubtitleLanguages))
         {
-            fields.Add(("💬", t.Subtitulos, n.SubtitleLanguages));
+            fields.Add(("💬", t.Subtitulos, TruncateLanguageList(n.SubtitleLanguages)));
         }
 
         if (includeSeason && n.Season is not null)
@@ -156,6 +156,22 @@ public static class NotificationCardFormatter
         }
 
         return fields;
+    }
+
+    /// <summary>
+    /// Caps a comma-separated language list (e.g. from Sonarr/Radarr's own MediaInfo) at 3
+    /// entries, folding the rest into a trailing "…(+N)" — some releases carry a dozen+
+    /// audio/subtitle tracks, which would otherwise dominate the whole card.
+    /// </summary>
+    private static string TruncateLanguageList(string languages)
+    {
+        var all = languages.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (all.Length <= 3)
+        {
+            return languages;
+        }
+
+        return $"{string.Join(", ", all.Take(3))} …(+{all.Length - 3})";
     }
 
     private static string FormatField((string Emoji, string Label, string Value) f, NotificationChannel channel) => channel switch

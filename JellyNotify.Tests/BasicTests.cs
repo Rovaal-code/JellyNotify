@@ -953,6 +953,30 @@ public sealed class RequestStatusSummaryBuilderTests
     }
 
     [Fact]
+    public void Build_Downloading_ShowsMostRecentlyUpdatedFirst_NotJustInsertionOrder()
+    {
+        // 6 older downloading items (inserted first, so a naive "take the first 5" would
+        // hide the newest one behind "+2") + 1 that just started downloading a moment ago.
+        // The most recently active item must always be visible, regardless of insertion order.
+        var older = Enumerable.Range(0, 6).Select(i =>
+        {
+            var s = Snapshot("req:Approved|media:Processing", $"Older Movie {i}");
+            s.SeerrRequestId = 200 + i;
+            s.DownloadStartedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(i);
+            return s;
+        });
+        var justStarted = Snapshot("req:Approved|media:Processing", "Brand New Download");
+        justStarted.SeerrRequestId = 999;
+        justStarted.DownloadStartedAt = new DateTime(2026, 7, 4, 12, 0, 0, DateTimeKind.Utc);
+
+        var all = older.Append(justStarted).ToList();
+        var text = RequestStatusSummaryBuilder.Build(all, "user-1", "en-US");
+
+        Assert.Contains("Brand New Download", text);
+        Assert.Contains("(+2)", text);
+    }
+
+    [Fact]
     public void Build_PartitionsGenericPlaceholders_OutOfVisibleListAndIntoPlusCount()
     {
         // 5 generic-titled items (inserted first) + 1 real-titled item (inserted last) —
@@ -1209,6 +1233,24 @@ public sealed class NotificationCardFormatterTests
         Assert.Contains("**Quality**\nWEBDL-1080p", result);
         Assert.Contains("**Audio**\nen, es", result);
         Assert.Contains("**Subtitles**\nen, es, fr", result);
+    }
+
+    [Fact]
+    public void Enrich_MediaAvailable_TruncatesAudioAndSubtitles_ToThreeLanguagesPlusCount()
+    {
+        var notification = new NotificationEvent
+        {
+            Type = NotificationType.MediaAvailable,
+            Title = "Now available",
+            MediaTitle = "Dune: Part Two",
+            AudioLanguages = "en, es, fr, de, it",
+            SubtitleLanguages = "en, es, fr, de"
+        };
+
+        var result = NotificationCardFormatter.Enrich(notification, "en-US", NotificationChannel.Discord);
+
+        Assert.Contains("**Audio**\nen, es, fr …(+2)", result);
+        Assert.Contains("**Subtitles**\nen, es, fr …(+1)", result);
     }
 
     [Fact]

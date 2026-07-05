@@ -56,14 +56,14 @@ public static class RequestStatusSummaryBuilder
         var sb = new StringBuilder();
         sb.Append(t.Header);
 
-        AppendCategory(sb, pending, "🕓", t.Pending, s => TitleWithYear(s));
-        AppendCategory(sb, approvedWaiting, "✅", t.ApprovedQueued, s => TitleWithYear(s));
-        AppendCategory(sb, downloading, "⬇️", t.Downloading, s => DownloadingLine(s, t));
-        AppendCategory(sb, partiallyAvailable, "🎞️", t.PartiallyAvailable, s => TitleWithYear(s));
-        AppendCategory(sb, available, "🎬", t.Available, s => TitleWithYear(s));
-        AppendCategory(sb, blocklisted, "🚫", t.Blocklisted, s => TitleWithYear(s));
-        AppendCategory(sb, declined, "❌", t.Declined, s => TitleWithYear(s));
-        AppendCategory(sb, failed, "💔", t.Failed, s => TitleWithYear(s));
+        AppendCategory(sb, pending, "🕓", t.Pending, s => TitleWithYear(s), s => s.RequestedAt);
+        AppendCategory(sb, approvedWaiting, "✅", t.ApprovedQueued, s => TitleWithYear(s), s => s.ApprovedAt ?? s.RequestedAt);
+        AppendCategory(sb, downloading, "⬇️", t.Downloading, s => DownloadingLine(s, t), s => s.ArrLastProgressAt ?? s.DownloadStartedAt);
+        AppendCategory(sb, partiallyAvailable, "🎞️", t.PartiallyAvailable, s => TitleWithYear(s), s => s.PartiallyAvailableAt);
+        AppendCategory(sb, available, "🎬", t.Available, s => TitleWithYear(s), s => s.AvailableAt);
+        AppendCategory(sb, blocklisted, "🚫", t.Blocklisted, s => TitleWithYear(s), s => s.FailedAt);
+        AppendCategory(sb, declined, "❌", t.Declined, s => TitleWithYear(s), s => s.FailedAt);
+        AppendCategory(sb, failed, "💔", t.Failed, s => TitleWithYear(s), s => s.FailedAt);
 
         return sb.ToString();
     }
@@ -120,7 +120,7 @@ public static class RequestStatusSummaryBuilder
         return $"{Math.Max(span.Minutes, 1)}{t.Minutes}";
     }
 
-    private static void AppendCategory(StringBuilder sb, IReadOnlyList<RequestSnapshot> items, string icon, string label, Func<RequestSnapshot, string> format)
+    private static void AppendCategory(StringBuilder sb, IReadOnlyList<RequestSnapshot> items, string icon, string label, Func<RequestSnapshot, string> format, Func<RequestSnapshot, DateTime?> sortKey)
     {
         if (items.Count == 0)
         {
@@ -130,8 +130,14 @@ public static class RequestStatusSummaryBuilder
         // Partition before taking the top N so a generic "Movie"/"TV Show"/"Media"
         // placeholder (title not resolved yet — see MediaRequestService.MaxDetailFetchesPerCycle)
         // never displaces a real title in the visible list; it always counts toward
-        // "+N" instead, regardless of how many real titles there are.
-        var real = items.Where(i => !MediaRequestService.IsGenericFallbackTitle(i.MediaTitle, i.MediaType)).ToList();
+        // "+N" instead, regardless of how many real titles there are. Most-recent-first
+        // by this category's own relevant date, so a title that just started downloading
+        // (for example) shows up instead of being buried behind older entries that
+        // happen to sit earlier in the underlying store.
+        var real = items
+            .Where(i => !MediaRequestService.IsGenericFallbackTitle(i.MediaTitle, i.MediaType))
+            .OrderByDescending(sortKey)
+            .ToList();
         var genericCount = items.Count - real.Count;
 
         sb.Append($"\n\n{icon} {label} ({items.Count}):");
