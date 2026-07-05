@@ -176,17 +176,22 @@
     min-width: 0;
 }
 
+/* Scoped to #jellynotify-config-page .sectionTitle (never plain
+   .sectionTitle alone) so every card header in this plugin's own page —
+   with or without a leading icon (General/Diagnóstico have none) —
+   shares the same display-font treatment, without restyling an
+   unrelated Jellyfin settings page section header that this CSS also
+   happens to be injected alongside. */
+#jellynotify-config-page .sectionTitle {
+    font-family: var(--jn-font-display);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
 .jn-section-title-icon {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    /* Scoped to .sectionTitle.jn-section-title-icon together (never plain
-       .sectionTitle alone) so this never restyles an unrelated Jellyfin
-       settings page section header that this CSS also happens to be
-       injected alongside. */
-    font-family: var(--jn-font-display);
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
 }
 
 .jn-section-title-icon img {
@@ -1093,6 +1098,7 @@
 .jn-header {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 1rem;
     padding: 1.5rem 0.25rem;
 }
@@ -1122,9 +1128,12 @@
 .jn-tabs {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 0.4rem;
     padding: 0.4rem;
-    margin-bottom: 1.25rem;
+    margin: 0 auto 1.25rem;
+    width: fit-content;
+    max-width: 100%;
     background: var(--jn-surface-2);
     backdrop-filter: blur(var(--jn-glass-blur));
     -webkit-backdrop-filter: blur(var(--jn-glass-blur));
@@ -1585,35 +1594,15 @@
     margin-bottom: 0;
 }
 
-/* ── Ambient background (config page only) ─────────────────────────
-   Fully static now — no `animation` property anywhere on this rule.
-   Two prior attempts put an `animation` on #jellynotify-config-page, then
-   on .content-primary — both are Jellyfin's own structural classes for
-   this page (the first carries `.page.type-interior`, used by Jellyfin's
-   own page-enter transition; the second is Jellyfin's admin theme's shared
-   content wrapper, which likely has its own transition/animation too). The
-   CSS `animation` shorthand fully replaces any prior animation-name on
-   the exact element it's set on, so either one could have silently
-   hijacked whatever Jellyfin itself was animating there, leaving the page
-   visibly stuck mid-transition (shifted right) both times. Dropping the
-   animation entirely removes that whole class of bug — background-color/
-   background-image alone cannot structurally conflict with anything
-   Jellyfin does with transform/animation on the same element.
-
-   Scoped to #jellynotify-config-page .content-primary specifically —
-   .content-primary alone is Jellyfin's shared wrapper for EVERY admin
-   page (plugin config pages, core settings, everything), and this CSS
-   file is injected globally for the bell/panel/toast, so a bare
-   `.content-primary` rule here was painting this background onto every
-   other plugin's config page too, not just JellyNotify's own. */
-#jellynotify-config-page .content-primary {
-    background-color: var(--jn-bg);
-    background-image:
-        repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.012) 0px, rgba(255, 255, 255, 0.012) 1px, transparent 1px, transparent 3px),
-        radial-gradient(circle at 12% 15%, rgba(169, 112, 255, 0.16), transparent 45%),
-        radial-gradient(circle at 88% 85%, rgba(53, 229, 240, 0.14), transparent 45%),
-        radial-gradient(circle at 82% 20%, rgba(255, 95, 216, 0.1), transparent 40%);
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-}
+/* ── Ambient background (config page) — removed ─────────────────────
+   This went through four attempts (sibling divs, animation on
+   #jellynotify-config-page, animation on .content-primary, then a
+   static gradient on .content-primary) and even the final static,
+   no-background-color, low-alpha version still visibly overlaid
+   whatever background Jellyfin's own theme (or a custom theme like
+   ElegantFin) paints behind .content-primary — confirmed by the user
+   toggling `background-image` off directly. Not worth a fifth attempt;
+   the page relies on .jn-card's own glass/border treatment for its
+   visual identity instead, and lets the surrounding theme's background
+   show through untouched. */
 
