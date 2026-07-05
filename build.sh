@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$SCRIPT_DIR/JellyNotify.Plugin"
 OUTPUT_DIR="$SCRIPT_DIR/dist"
 RELEASES_DIR="$SCRIPT_DIR/releases"
-VERSION="0.1.0.1"
+VERSION="0.1.0.2"
 if [[ -x "/home/alvaro/.dotnet/dotnet" ]]; then
     export PATH="$PATH:/home/alvaro/.dotnet"
 fi
@@ -101,13 +101,13 @@ filepath = sys.argv[3]
 timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 version_tag = version[:-2] if version.endswith('.0') else version
 source_url = f'https://github.com/Rovaal-code/JellyNotify/releases/download/v{version_tag}/jellynotify_{version}.zip'
-changelog = '''JellyNotify v0.1.0.1 - new holographic visual style, smarter /status and notifications
+changelog = '''JellyNotify v0.1.0.2 - fixes the config page background leaking into other plugins
 
 Compatible with Jellyfin 10.11.11 (the version this build targets and was verified against), Seerr 3.3.0, Radarr 6.1.1.10360, Sonarr 4.0.17.2952, and Jellyfin Enhanced 11.12.0.0.
 
-- Full visual restyle of the config page and the bell/panel/toasts: glass cards with a violet-to-cyan gradient border, a self-hosted Orbitron/Exo 2 font pairing, glowing status pills with a live pulse, and an ambient background on the config page.
-- /status now lists each category most-recent-first, so a title that just started downloading is never hidden behind older entries.
-- Audio and subtitle language lists in Contenido Disponible notifications are now capped at 3 entries, with the rest folded into a trailing count.'''
+- Fixed the v0.1.0.1 ambient background rule being unscoped, which painted it onto every other plugin's config page (and Jellyfin's own settings pages) instead of just JellyNotify's own.
+- Same visual restyle, /status ordering, and notification language truncation as v0.1.0.1 otherwise unchanged.
+- If you already had v0.1.0.1 installed, this republish under a new version number is also what makes Jellyfin actually fetch it - reusing the same version string does not trigger a redownload.'''
 with open(filepath, 'r', encoding='utf-8') as f:
     data = json.load(f)
 for plugin in data:

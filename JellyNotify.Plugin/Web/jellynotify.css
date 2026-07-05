@@ -1598,8 +1598,15 @@
    visibly stuck mid-transition (shifted right) both times. Dropping the
    animation entirely removes that whole class of bug — background-color/
    background-image alone cannot structurally conflict with anything
-   Jellyfin does with transform/animation on the same element. */
-.content-primary {
+   Jellyfin does with transform/animation on the same element.
+
+   Scoped to #jellynotify-config-page .content-primary specifically —
+   .content-primary alone is Jellyfin's shared wrapper for EVERY admin
+   page (plugin config pages, core settings, everything), and this CSS
+   file is injected globally for the bell/panel/toast, so a bare
+   `.content-primary` rule here was painting this background onto every
+   other plugin's config page too, not just JellyNotify's own. */
+#jellynotify-config-page .content-primary {
     background-color: var(--jn-bg);
     background-image:
         repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.012) 0px, rgba(255, 255, 255, 0.012) 1px, transparent 1px, transparent 3px),

@@ -50,7 +50,7 @@ JellyNotify connects to **Overseerr/Jellyseerr**, **Sonarr**, and **Radarr**, an
 ### Manual
 
 1. Download the ZIP from [Releases](https://github.com/Rovaal-code/JellyNotify/releases)
-2. Extract into your Jellyfin plugins folder, e.g. `/var/lib/jellyfin/plugins/JellyNotify_0.1.0.1/`
+2. Extract into your Jellyfin plugins folder, e.g. `/var/lib/jellyfin/plugins/JellyNotify_0.1.0.2/`
 3. Restart Jellyfin.
 
 ### Build from source

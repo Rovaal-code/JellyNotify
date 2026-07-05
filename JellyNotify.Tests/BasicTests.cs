@@ -413,31 +413,31 @@ public sealed class ArrCorrelationTests
 public sealed class ReleaseMetadataTests
 {
     [Fact]
-    public void BuildScript_DefaultsToV011AndUpdatesRepositoryManifest()
+    public void BuildScript_DefaultsToV012AndUpdatesRepositoryManifest()
     {
         var rootDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..");
         var buildScript = File.ReadAllText(Path.Combine(rootDir, "build.sh"));
 
-        Assert.Contains("VERSION=\"0.1.0.1\"", buildScript);
+        Assert.Contains("VERSION=\"0.1.0.2\"", buildScript);
         Assert.Contains("repository/manifest.json", buildScript);
         Assert.Contains("Rovaal-code/JellyNotify/releases/download", buildScript);
     }
 
     [Fact]
-    public void RepositoryManifest_ContainsV011ReleaseUrl()
+    public void RepositoryManifest_ContainsV012ReleaseUrl()
     {
         var rootDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..");
         var manifest = File.ReadAllText(Path.Combine(rootDir, "repository", "manifest.json"));
 
-        Assert.Contains("\"version\": \"0.1.0.1\"", manifest);
-        Assert.Contains("https://github.com/Rovaal-code/JellyNotify/releases/download/v0.1.0.1/jellynotify_0.1.0.1.zip", manifest);
+        Assert.Contains("\"version\": \"0.1.0.2\"", manifest);
+        Assert.Contains("https://github.com/Rovaal-code/JellyNotify/releases/download/v0.1.0.2/jellynotify_0.1.0.2.zip", manifest);
     }
 
     [Fact]
-    public void RepositoryManifest_ChecksumMatchesLocalV011Zip_WhenPackageExists()
+    public void RepositoryManifest_ChecksumMatchesLocalV012Zip_WhenPackageExists()
     {
         var rootDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..");
-        var zipPath = Path.Combine(rootDir, "releases", "jellynotify_0.1.0.1.zip");
+        var zipPath = Path.Combine(rootDir, "releases", "jellynotify_0.1.0.2.zip");
         if (!File.Exists(zipPath))
         {
             return;
