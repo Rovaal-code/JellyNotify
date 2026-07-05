@@ -7,6 +7,6 @@
   "overview": "JellyNotify adds per-user Jellyfin notifications with a bell, unread badge, notification panel, and toast alerts. It integrates with Overseerr/Jellyseerr, Sonarr, and Radarr while keeping user notifications isolated.",
   "owner": "Rovaal-code",
   "targetAbi": "10.11.0.0",
-  "timestamp": "2026-07-04T00:00:00Z",
-  "version": "0.1.0.0"
+  "timestamp": "2026-07-05T00:00:00Z",
+  "version": "0.1.0.1"
 }
