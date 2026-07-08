@@ -81,19 +81,18 @@ public sealed class ArrWebhookController : ControllerBase
             return;
         }
 
-        // Grab fires the instant a release is sent to the download client — whether that
-        // search was automatic or the admin picked a release by hand in Interactive Search
-        // makes no difference, Sonarr/Radarr fire the same event either way (confirmed
-        // against Radarr's own DownloadService.DownloadReport, which publishes
-        // MovieGrabbedEvent unconditionally). This is what lets "download started" arrive
-        // instantly instead of waiting for the next queue poll. Download/Upgrade carry the
-        // import + MediaInfo data for the "available" notification. Everything else
-        // (HealthIssue/Test/Rename/etc.) is not notification-worthy here.
-        var isGrab = string.Equals(payload.EventType, "Grab", StringComparison.OrdinalIgnoreCase);
+        // Only import events (Download/Upgrade) notify from the webhook. Grab used to fire
+        // "download started" the instant a release was sent to the download client, but at
+        // that point nothing has transferred yet — it arrived with no progress and no ETA.
+        // "Download started" is now driven entirely by the queue poll, which waits until a
+        // real transfer is underway (progress > 0 with an ETA), so Grab is deliberately
+        // ignored here. Download/Upgrade still carry the import + MediaInfo data for the
+        // "available" notification; everything else (Grab/HealthIssue/Test/Rename/etc.) is
+        // not notification-worthy.
         var isImport = string.Equals(payload.EventType, "Download", StringComparison.OrdinalIgnoreCase)
             || string.Equals(payload.EventType, "Upgrade", StringComparison.OrdinalIgnoreCase);
 
-        if (!isGrab && !isImport)
+        if (!isImport)
         {
             return;
         }
@@ -111,50 +110,7 @@ public sealed class ArrWebhookController : ControllerBase
 
         var mediaTitle = payload.Series?.Title ?? payload.Movie?.Title;
 
-        if (isGrab)
-        {
-            await DispatchGrabAsync(matched, mediaType, mediaTitle, payload.Release?.Quality, cancellationToken).ConfigureAwait(false);
-            return;
-        }
-
         await DispatchImportAsync(matched, mediaType, mediaTitle, payload, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Dispatches "download started" the instant a release is grabbed. No progress/ETA is
-    /// known yet at this point (nothing has actually started transferring) — the recurring
-    /// *arr queue check fills those in once the item shows up there. Quality comes free from
-    /// the Grab payload's release info, so it's shown right away regardless.
-    /// </summary>
-    private async Task DispatchGrabAsync(
-        IReadOnlyList<RequestSnapshot> matched,
-        string mediaType,
-        string? mediaTitle,
-        string? quality,
-        CancellationToken cancellationToken)
-    {
-        foreach (var snapshot in matched.Where(s => !string.IsNullOrWhiteSpace(s.JellyfinUserId)))
-        {
-            var prefs = await _preferenceStore.GetByUserAsync(snapshot.JellyfinUserId).ConfigureAwait(false);
-            var language = NotificationLanguage.Resolve(prefs);
-            var (title, message) = NotificationText.ArrDownloadStarted(mediaTitle ?? snapshot.MediaTitle, language);
-
-            await _dispatcher.DispatchAsync(new NotificationEvent
-            {
-                JellyfinUserId = snapshot.JellyfinUserId,
-                Type = NotificationType.DownloadStarted,
-                Title = title,
-                Message = message,
-                MediaTitle = mediaTitle ?? snapshot.MediaTitle,
-                MediaType = mediaType,
-                ExternalIds = snapshot.ExternalIds,
-                ThumbnailUrl = snapshot.PosterUrl,
-                Year = snapshot.Year,
-                SeerrRequestId = snapshot.SeerrRequestId,
-                Quality = quality,
-                CreatedAt = DateTime.UtcNow
-            }, cancellationToken).ConfigureAwait(false);
-        }
     }
 
     private async Task DispatchImportAsync(

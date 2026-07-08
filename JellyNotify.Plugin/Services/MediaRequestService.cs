@@ -28,6 +28,7 @@ public sealed class MediaRequestService : IMediaRequestService
     private readonly IRequestSnapshotStore _snapshotStore;
     private readonly INotificationDispatcher _dispatcher;
     private readonly IUserPreferenceStore _preferenceStore;
+    private readonly IArrMediaInfoLookup _arrMediaInfo;
     private readonly ILogger<MediaRequestService> _logger;
 
     private int _detailFetchesThisCycle;
@@ -38,12 +39,14 @@ public sealed class MediaRequestService : IMediaRequestService
         IRequestSnapshotStore snapshotStore,
         INotificationDispatcher dispatcher,
         IUserPreferenceStore preferenceStore,
+        IArrMediaInfoLookup arrMediaInfo,
         ILogger<MediaRequestService> logger)
     {
         _seerr = seerr;
         _snapshotStore = snapshotStore;
         _dispatcher = dispatcher;
         _preferenceStore = preferenceStore;
+        _arrMediaInfo = arrMediaInfo;
         _logger = logger;
     }
 
@@ -291,29 +294,24 @@ public sealed class MediaRequestService : IMediaRequestService
         else if (request.Media?.Status == (int)SeerrMediaStatus.Available
                  && !prevStatus.Contains($"media:{MapMediaStatus((int)SeerrMediaStatus.Available)}", StringComparison.Ordinal))
         {
+            // Seerr's status carries no quality/audio/subtitle detail, so look the imported
+            // file up in *arr to enrich the card (the webhook path already has it inline).
+            var mediaInfo = await _arrMediaInfo.LookupAsync(request.Type, externalIds, cancellationToken).ConfigureAwait(false);
             await DispatchNotificationAsync(
                 NotificationType.MediaAvailable,
                 NotificationText.MediaAvailable,
                 displayTitle,
-                targetUserId, request, externalIds, existing.PosterUrl, existing.Year, prevStatus, "Available", cancellationToken).ConfigureAwait(false);
+                targetUserId, request, externalIds, existing.PosterUrl, existing.Year, prevStatus, "Available", cancellationToken, mediaInfo).ConfigureAwait(false);
         }
         else if (request.Media?.Status == (int)SeerrMediaStatus.PartiallyAvailable
                  && !prevStatus.Contains($"media:{MapMediaStatus((int)SeerrMediaStatus.PartiallyAvailable)}", StringComparison.Ordinal))
         {
+            var mediaInfo = await _arrMediaInfo.LookupAsync(request.Type, externalIds, cancellationToken).ConfigureAwait(false);
             await DispatchNotificationAsync(
                 NotificationType.MediaPartiallyAvailable,
                 NotificationText.MediaPartiallyAvailable,
                 displayTitle,
-                targetUserId, request, externalIds, existing.PosterUrl, existing.Year, prevStatus, "PartiallyAvailable", cancellationToken).ConfigureAwait(false);
-        }
-        else if (request.Media?.Status == (int)SeerrMediaStatus.Processing
-                 && !prevStatus.Contains($"media:{MapMediaStatus((int)SeerrMediaStatus.Processing)}", StringComparison.Ordinal))
-        {
-            await DispatchNotificationAsync(
-                NotificationType.DownloadStarted,
-                NotificationText.SeerrDownloadStarted,
-                displayTitle,
-                targetUserId, request, externalIds, existing.PosterUrl, existing.Year, prevStatus, "Processing", cancellationToken).ConfigureAwait(false);
+                targetUserId, request, externalIds, existing.PosterUrl, existing.Year, prevStatus, "PartiallyAvailable", cancellationToken, mediaInfo).ConfigureAwait(false);
         }
         else if ((request.Media?.Status == (int)SeerrMediaStatus.Blocklisted
                   || request.Media?.Status == (int)SeerrMediaStatus.Deleted)
@@ -338,7 +336,8 @@ public sealed class MediaRequestService : IMediaRequestService
         int? year,
         string? previousState,
         string? newState,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        ArrMediaInfoResult? mediaInfo = null)
     {
         var prefs = await _preferenceStore.GetByUserAsync(jellyfinUserId).ConfigureAwait(false);
         var language = NotificationLanguage.Resolve(prefs);
@@ -358,6 +357,9 @@ public sealed class MediaRequestService : IMediaRequestService
             SeerrRequestId = request.Id,
             PreviousState = previousState,
             NewState = newState,
+            Quality = mediaInfo?.Quality,
+            AudioLanguages = mediaInfo?.AudioLanguages,
+            SubtitleLanguages = mediaInfo?.SubtitleLanguages,
             CreatedAt = DateTime.UtcNow
         };
 

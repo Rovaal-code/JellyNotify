@@ -53,17 +53,6 @@ public static class NotificationText
                 : ("Request failed", $"Your request for \"{mediaTitle}\" has failed.");
     }
 
-    /// <summary>Seerr's own media status just moved to "Processing" (queued for download).</summary>
-    public static (string Title, string Message) SeerrDownloadStarted(string mediaTitle, string language)
-    {
-        var (es, ca) = Flags(language);
-        return ca
-            ? ("Descàrrega iniciada", $"\"{mediaTitle}\" s'està descarregant.")
-            : es
-                ? ("Descarga iniciada", $"\"{mediaTitle}\" se está descargando.")
-                : ("Download started", $"\"{mediaTitle}\" is now downloading.");
-    }
-
     /// <summary>Media became fully available in the library.</summary>
     public static (string Title, string Message) MediaAvailable(string mediaTitle, string language)
     {
@@ -97,7 +86,7 @@ public static class NotificationText
                 : ("Problem detected", $"A problem was detected for \"{mediaTitle}\".");
     }
 
-    /// <summary>A Sonarr/Radarr queue item started actively downloading.</summary>
+    /// <summary>A Sonarr/Radarr queue item began transferring for real (progress &gt; 0 with an ETA), seen on the queue poll — not the bare grab.</summary>
     public static (string Title, string Message) ArrDownloadStarted(string mediaTitle, string language)
     {
         var (es, ca) = Flags(language);
@@ -106,6 +95,17 @@ public static class NotificationText
             : es
                 ? ("Descarga iniciada", $"\"{mediaTitle}\" se está descargando.")
                 : ("Download started", $"\"{mediaTitle}\" is now downloading.");
+    }
+
+    /// <summary>A Sonarr/Radarr download crossed the configured progress threshold — the mid-download "Downloading" ping.</summary>
+    public static (string Title, string Message) ArrDownloading(string mediaTitle, string language)
+    {
+        var (es, ca) = Flags(language);
+        return ca
+            ? ("Descarregant", $"\"{mediaTitle}\" s'està descarregant.")
+            : es
+                ? ("Descargando", $"\"{mediaTitle}\" se está descargando.")
+                : ("Downloading", $"\"{mediaTitle}\" is downloading.");
     }
 
     /// <summary>A Sonarr/Radarr download failed.</summary>

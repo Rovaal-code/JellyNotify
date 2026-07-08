@@ -93,6 +93,75 @@ public class ArrQualityInfo
 }
 
 /// <summary>
+/// The audio/subtitle track summary Sonarr/Radarr expose on an imported file's
+/// <c>mediaInfo</c>. Both are "/"-separated strings straight from the API (e.g.
+/// "English/Spanish"), matching the shape the moviefile/episodefile endpoints return —
+/// distinct from the webhook payload, which sends them as arrays.
+/// </summary>
+public class ArrFileMediaInfo
+{
+    /// <summary>Gets or sets the audio languages, "/"-separated (e.g. "English/Japanese").</summary>
+    [JsonPropertyName("audioLanguages")]
+    public string? AudioLanguages { get; set; }
+
+    /// <summary>Gets or sets the subtitle languages, "/"-separated (e.g. "English/Spanish").</summary>
+    [JsonPropertyName("subtitles")]
+    public string? Subtitles { get; set; }
+}
+
+/// <summary>
+/// An imported movie file from Radarr's <c>api/v3/moviefile?movieId=</c> endpoint — the
+/// source of quality/audio/subtitle detail for a "media available" notification that was
+/// driven by Seerr's own status poll (which carries none of it) rather than the *arr import
+/// webhook.
+/// </summary>
+public class ArrMovieFile
+{
+    /// <summary>Gets or sets the file's quality wrapper (same nested shape as the queue's).</summary>
+    [JsonPropertyName("quality")]
+    public ArrQueueQuality? Quality { get; set; }
+
+    /// <summary>Gets or sets the parent movie ID.</summary>
+    [JsonPropertyName("movieId")]
+    public int MovieId { get; set; }
+
+    /// <summary>Gets or sets the date the file was added/imported, used to pick the newest.</summary>
+    [JsonPropertyName("dateAdded")]
+    public DateTime? DateAdded { get; set; }
+
+    /// <summary>Gets or sets the audio/subtitle track summary.</summary>
+    [JsonPropertyName("mediaInfo")]
+    public ArrFileMediaInfo? MediaInfo { get; set; }
+}
+
+/// <summary>
+/// An imported episode file from Sonarr's <c>api/v3/episodefile?seriesId=</c> endpoint. Same
+/// role as <see cref="ArrMovieFile"/>, for series.
+/// </summary>
+public class ArrEpisodeFile
+{
+    /// <summary>Gets or sets the file's quality wrapper.</summary>
+    [JsonPropertyName("quality")]
+    public ArrQueueQuality? Quality { get; set; }
+
+    /// <summary>Gets or sets the parent series ID.</summary>
+    [JsonPropertyName("seriesId")]
+    public int SeriesId { get; set; }
+
+    /// <summary>Gets or sets the season this file belongs to.</summary>
+    [JsonPropertyName("seasonNumber")]
+    public int SeasonNumber { get; set; }
+
+    /// <summary>Gets or sets the date the file was added/imported, used to pick the newest.</summary>
+    [JsonPropertyName("dateAdded")]
+    public DateTime? DateAdded { get; set; }
+
+    /// <summary>Gets or sets the audio/subtitle track summary.</summary>
+    [JsonPropertyName("mediaInfo")]
+    public ArrFileMediaInfo? MediaInfo { get; set; }
+}
+
+/// <summary>
 /// Represents a status message from the *arr download queue.
 /// </summary>
 public class ArrStatusMessage

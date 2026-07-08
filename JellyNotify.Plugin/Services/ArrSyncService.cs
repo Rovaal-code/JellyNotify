@@ -44,26 +44,28 @@ public sealed class ArrSyncService : IArrSyncService
     public async Task PollAllAsync(CancellationToken cancellationToken = default)
     {
         var config = Plugin.Instance!.Configuration;
+        var downloadingThreshold = config.NotificationSettings.DownloadingNotifyThresholdPercent;
         var snapshots = await _snapshotStore.GetAllAsync().ConfigureAwait(false);
 
         // Poll Sonarr instances
         foreach (var instance in config.SonarrInstances.Where(i => i.Enabled))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await PollSonarrAsync(instance, snapshots, cancellationToken).ConfigureAwait(false);
+            await PollSonarrAsync(instance, snapshots, downloadingThreshold, cancellationToken).ConfigureAwait(false);
         }
 
         // Poll Radarr instances
         foreach (var instance in config.RadarrInstances.Where(i => i.Enabled))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await PollRadarrAsync(instance, snapshots, cancellationToken).ConfigureAwait(false);
+            await PollRadarrAsync(instance, snapshots, downloadingThreshold, cancellationToken).ConfigureAwait(false);
         }
     }
 
     private async Task PollSonarrAsync(
         Configuration.ArrInstanceConfig instance,
         IReadOnlyList<RequestSnapshot> snapshots,
+        int downloadingThreshold,
         CancellationToken cancellationToken)
     {
         try
@@ -101,23 +103,24 @@ public sealed class ArrSyncService : IArrSyncService
 
                     var progressKey = $"{instance.Name}:sonarr:{item.DownloadId ?? item.Id.ToString()}:{snapshot.JellyfinUserId}";
                     var currentStatus = NormalizeArrStatus(item);
-                    var previousStatus = _progressStore.GetProgress(progressKey);
+                    var stage = ComputeStage(currentStatus, item, downloadingThreshold);
+                    var previousStage = _progressStore.GetProgress(progressKey);
 
                     // Reuses the queue item this poll cycle already fetched — no extra
                     // network calls — so a future "check my requests" command can show a
                     // real download percentage instead of just a coarse status string.
                     await UpdateSnapshotProgressAsync(snapshot, instance.Name, currentStatus, item).ConfigureAwait(false);
 
-                    if (string.Equals(currentStatus, previousStatus, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(stage, previousStage, StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
 
-                    _progressStore.SetProgress(progressKey, currentStatus);
+                    _progressStore.SetProgress(progressKey, stage);
 
                     var prefs = await _preferenceStore.GetByUserAsync(snapshot.JellyfinUserId).ConfigureAwait(false);
                     var language = NotificationLanguage.Resolve(prefs);
-                    var (notifType, title, message) = MapArrStatus(currentStatus, matchedSeries?.Title ?? item.Title, language);
+                    var (notifType, title, message) = MapArrStatus(stage, matchedSeries?.Title ?? item.Title, language);
                     if (notifType is null)
                     {
                         continue;
@@ -134,8 +137,8 @@ public sealed class ArrSyncService : IArrSyncService
                         ExternalIds = snapshot.ExternalIds,
                         ThumbnailUrl = snapshot.PosterUrl,
                         ArrInstanceName = instance.Name,
-                        PreviousState = previousStatus,
-                        NewState = currentStatus,
+                        PreviousState = previousStage,
+                        NewState = stage,
                         Year = snapshot.Year,
                         ProgressPercent = snapshot.ArrProgress,
                         EtaRaw = snapshot.ArrTimeLeft,
@@ -154,6 +157,7 @@ public sealed class ArrSyncService : IArrSyncService
     private async Task PollRadarrAsync(
         Configuration.ArrInstanceConfig instance,
         IReadOnlyList<RequestSnapshot> snapshots,
+        int downloadingThreshold,
         CancellationToken cancellationToken)
     {
         try
@@ -189,20 +193,21 @@ public sealed class ArrSyncService : IArrSyncService
 
                     var progressKey = $"{instance.Name}:radarr:{item.DownloadId ?? item.Id.ToString()}:{snapshot.JellyfinUserId}";
                     var currentStatus = NormalizeArrStatus(item);
-                    var previousStatus = _progressStore.GetProgress(progressKey);
+                    var stage = ComputeStage(currentStatus, item, downloadingThreshold);
+                    var previousStage = _progressStore.GetProgress(progressKey);
 
                     await UpdateSnapshotProgressAsync(snapshot, instance.Name, currentStatus, item).ConfigureAwait(false);
 
-                    if (string.Equals(currentStatus, previousStatus, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(stage, previousStage, StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
 
-                    _progressStore.SetProgress(progressKey, currentStatus);
+                    _progressStore.SetProgress(progressKey, stage);
 
                     var prefs = await _preferenceStore.GetByUserAsync(snapshot.JellyfinUserId).ConfigureAwait(false);
                     var language = NotificationLanguage.Resolve(prefs);
-                    var (notifType, title, message) = MapArrStatus(currentStatus, matchedMovie?.Title ?? item.Title, language);
+                    var (notifType, title, message) = MapArrStatus(stage, matchedMovie?.Title ?? item.Title, language);
                     if (notifType is null)
                     {
                         continue;
@@ -219,8 +224,8 @@ public sealed class ArrSyncService : IArrSyncService
                         ExternalIds = snapshot.ExternalIds,
                         ThumbnailUrl = snapshot.PosterUrl,
                         ArrInstanceName = instance.Name,
-                        PreviousState = previousStatus,
-                        NewState = currentStatus,
+                        PreviousState = previousStage,
+                        NewState = stage,
                         Year = snapshot.Year,
                         ProgressPercent = snapshot.ArrProgress,
                         EtaRaw = snapshot.ArrTimeLeft,
@@ -323,6 +328,42 @@ public sealed class ArrSyncService : IArrSyncService
             (!string.IsNullOrWhiteSpace(movie.ImdbId) && s.ExternalIds?.ImdbId == movie.ImdbId)).ToList();
     }
 
+    /// <summary>
+    /// Collapses a queue item into the notification "stage" that the poll dedups on. Every
+    /// state except an active download passes through unchanged; a download is split into
+    /// three sub-stages so the poll fires notifications at the right moments rather than the
+    /// instant the item appears (which shows neither progress nor ETA):
+    /// <list type="bullet">
+    /// <item><c>downloading:pending</c> — appeared but no real transfer yet (no progress/ETA). Fires nothing.</item>
+    /// <item><c>downloading:started</c> — progress &gt; 0 with an ETA. Fires "Download started".</item>
+    /// <item><c>downloading:half</c> — progress reached the configured threshold. Fires "Downloading".</item>
+    /// </list>
+    /// Because each is a distinct dedup token, a download that is already past the threshold
+    /// the first time it's polled jumps straight to <c>downloading:half</c> (one "Downloading"
+    /// notification, no earlier "started"), which is the honest signal for content that is
+    /// genuinely already halfway. Internal for test visibility.
+    /// </summary>
+    internal static string ComputeStage(string normalizedStatus, ArrQueueItem item, int downloadingThresholdPercent)
+    {
+        if (!string.Equals(normalizedStatus, "downloading", StringComparison.OrdinalIgnoreCase))
+        {
+            return normalizedStatus;
+        }
+
+        var progress = ComputeProgressPercent(item);
+        if (progress is double percent && percent >= downloadingThresholdPercent)
+        {
+            return "downloading:half";
+        }
+
+        if (progress is > 0 && !string.IsNullOrWhiteSpace(item.Timeleft))
+        {
+            return "downloading:started";
+        }
+
+        return "downloading:pending";
+    }
+
     private static string NormalizeArrStatus(ArrQueueItem item)
     {
         if (string.Equals(item.TrackedDownloadStatus, "error", StringComparison.OrdinalIgnoreCase)
@@ -394,9 +435,17 @@ public sealed class ArrSyncService : IArrSyncService
 
         switch (status.ToLowerInvariant())
         {
+            // "downloading" (bare) is kept only for callers/tests that still pass the raw
+            // status; the live poll passes the finer stages below via ComputeStage.
             case "downloading":
+            case "downloading:started":
                 type = NotificationType.DownloadStarted;
                 text = NotificationText.ArrDownloadStarted(mediaTitle, language);
+                break;
+
+            case "downloading:half":
+                type = NotificationType.DownloadProgress;
+                text = NotificationText.ArrDownloading(mediaTitle, language);
                 break;
 
             // "importpending"/"imported"/"completed" fall through to default (no

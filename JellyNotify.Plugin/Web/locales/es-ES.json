@@ -128,6 +128,8 @@
     "notifEnabledDesc": "Interruptor general para todas las notificaciones (campana in-app y todos los bots conectados). Desactívalo para pausar todo sin desconectar nada.",
     "dedupWindowLabel": "Ventana de deduplicación (min)",
     "dedupWindowDesc": "Evita que la misma notificación se envíe más de una vez dentro de estos minutos — impide duplicados, nunca provoca repeticiones.",
+    "downloadingThresholdLabel": "Notificación \"Descargando\" al (%)",
+    "downloadingThresholdDesc": "La notificación intermedia \"Descargando\" solo se envía cuando la descarga alcanza este porcentaje. \"Descarga iniciada\" se envía antes, en cuanto la transferencia empieza de verdad.",
     "discordWebhookLabel": "URL del webhook (difusión global, solo admin)",
     "discordWebhookHint": "Se crea desde <b>Ajustes del servidor → Integraciones → Webhooks</b> en Discord — no en el Developer Portal, que es para el paso siguiente. Ejemplo: <code>https://discord.com/api/webhooks/123456789012345678/AbCdEfGh...</code>",
     "discordBotNameLabel": "Nombre del bot",

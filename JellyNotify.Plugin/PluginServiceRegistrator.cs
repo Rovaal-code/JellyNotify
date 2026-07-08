@@ -75,6 +75,10 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // Orchestrates notification routing across all configured channels.
         serviceCollection.AddSingleton<INotificationDispatcher, NotificationDispatcher>();
 
+        // Resolves quality/audio/subtitle detail from *arr for Seerr-poll-driven "available"
+        // notifications, which Seerr itself carries none of.
+        serviceCollection.AddSingleton<IArrMediaInfoLookup, ArrMediaInfoLookup>();
+
         // Manages media request lifecycle with Seerr.
         serviceCollection.AddSingleton<IMediaRequestService, MediaRequestService>();
 

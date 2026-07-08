@@ -19,6 +19,9 @@ public interface ISonarrApiClient
     /// <summary>Gets the current download queue from Sonarr.</summary>
     Task<ArrQueueResponse?> GetQueueAsync(string serverUrl, string apiKey, bool ignoreSsl = false, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets the imported episode files for a series, carrying quality + audio/subtitle mediainfo not available from Seerr's own status.</summary>
+    Task<IReadOnlyList<ArrEpisodeFile>> GetEpisodeFilesAsync(string serverUrl, string apiKey, int seriesId, bool ignoreSsl = false, CancellationToken cancellationToken = default);
+
     /// <summary>Gets download history from Sonarr.</summary>
     Task<ArrHistoryResponse?> GetHistoryAsync(string serverUrl, string apiKey, int page = 1, int pageSize = 50, bool ignoreSsl = false, CancellationToken cancellationToken = default);
 
@@ -51,6 +54,9 @@ public interface IRadarrApiClient
 
     /// <summary>Gets the current download queue from Radarr.</summary>
     Task<ArrQueueResponse?> GetQueueAsync(string serverUrl, string apiKey, bool ignoreSsl = false, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets the imported file(s) for a movie, carrying quality + audio/subtitle mediainfo not available from Seerr's own status.</summary>
+    Task<IReadOnlyList<ArrMovieFile>> GetMovieFilesAsync(string serverUrl, string apiKey, int movieId, bool ignoreSsl = false, CancellationToken cancellationToken = default);
 
     /// <summary>Gets download history from Radarr.</summary>
     Task<ArrHistoryResponse?> GetHistoryAsync(string serverUrl, string apiKey, int page = 1, int pageSize = 50, bool ignoreSsl = false, CancellationToken cancellationToken = default);

@@ -1446,6 +1446,7 @@
         if (ns) {
             setChecked('notif-enabled', ns.enabled);
             setValue('notif-dedup-window', ns.deduplicationWindowMinutes);
+            setValue('notif-downloading-threshold', ns.downloadingNotifyThresholdPercent);
         }
 
         // Default language
@@ -2038,7 +2039,8 @@
             arrWebhookEnabled: (_adminConfig && _adminConfig.arrWebhookEnabled) || false,
             notificationSettings: {
                 enabled: isChecked('notif-enabled'),
-                deduplicationWindowMinutes: parseInt(getValue('notif-dedup-window') || '10')
+                deduplicationWindowMinutes: parseInt(getValue('notif-dedup-window') || '10'),
+                downloadingNotifyThresholdPercent: parseInt(getValue('notif-downloading-threshold') || '50')
             },
             defaultLanguage: getValue('notif-language') || 'auto',
             notificationRetentionDays: parseInt(getValue('notif-retention-days') || '30'),

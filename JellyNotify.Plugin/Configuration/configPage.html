@@ -74,6 +74,11 @@
                         <input is="emby-input" type="number" id="notif-dedup-window" value="10" min="1" max="60">
                         <div class="fieldDescription" data-i18n="config.dedupWindowDesc">Prevents the same notification from being sent more than once within this many minutes — it stops duplicates, it never causes repeats.</div>
                     </div>
+                    <div class="inputContainer jn-field-half">
+                        <label class="inputLabel" for="notif-downloading-threshold" data-i18n="config.downloadingThresholdLabel">"Downloading" notification at (%)</label>
+                        <input is="emby-input" type="number" id="notif-downloading-threshold" value="50" min="1" max="100">
+                        <div class="fieldDescription" data-i18n="config.downloadingThresholdDesc">The mid-download "Downloading" notification is only sent once a download reaches this percentage. "Download started" still fires earlier, as soon as the transfer really begins.</div>
+                    </div>
                     <label class="emby-checkbox-label">
                         <input is="emby-checkbox" type="checkbox" id="script-injection-enabled" checked>
                         <span data-i18n="config.webInjectionLabel">Enable global web injection (bell/panel in Jellyfin Web)</span>

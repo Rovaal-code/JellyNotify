@@ -407,6 +407,15 @@ public class NotificationSettings
     /// Prevents notification spam for batch imports.
     /// </summary>
     public int DeduplicationWindowMinutes { get; set; } = 10;
+
+    /// <summary>
+    /// Gets or sets the download percentage at or above which the "Downloading" progress
+    /// notification is sent by the Sonarr/Radarr queue poll. The earlier "Download started"
+    /// notification still fires once real transfer begins (progress &gt; 0 with an ETA); this
+    /// only gates the second, mid-download "Downloading" ping so it isn't sent the instant a
+    /// download appears. Default 50 (%).
+    /// </summary>
+    public int DownloadingNotifyThresholdPercent { get; set; } = 50;
 }
 
 /// <summary>

@@ -88,6 +88,22 @@ public sealed class SonarrApiClient : ISonarrApiClient
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<ArrEpisodeFile>> GetEpisodeFilesAsync(string serverUrl, string apiKey, int seriesId, bool ignoreSsl = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var client = CreateClient(serverUrl, apiKey, ignoreSsl);
+            var result = await client.GetFromJsonAsync<List<ArrEpisodeFile>>($"api/v3/episodefile?seriesId={seriesId}", JsonOptions, cancellationToken).ConfigureAwait(false);
+            return result ?? new List<ArrEpisodeFile>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching Sonarr episode files for series {SeriesId} from {Url}", seriesId, serverUrl);
+            return new List<ArrEpisodeFile>();
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<ArrHistoryResponse?> GetHistoryAsync(string serverUrl, string apiKey, int page = 1, int pageSize = 50, bool ignoreSsl = false, CancellationToken cancellationToken = default)
     {
         try
@@ -349,6 +365,22 @@ public sealed class RadarrApiClient : IRadarrApiClient
         {
             _logger.LogError(ex, "Error fetching Radarr queue from {Url}", serverUrl);
             return null;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ArrMovieFile>> GetMovieFilesAsync(string serverUrl, string apiKey, int movieId, bool ignoreSsl = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var client = CreateClient(serverUrl, apiKey, ignoreSsl);
+            var result = await client.GetFromJsonAsync<List<ArrMovieFile>>($"api/v3/moviefile?movieId={movieId}", JsonOptions, cancellationToken).ConfigureAwait(false);
+            return result ?? new List<ArrMovieFile>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching Radarr movie files for movie {MovieId} from {Url}", movieId, serverUrl);
+            return new List<ArrMovieFile>();
         }
     }
 

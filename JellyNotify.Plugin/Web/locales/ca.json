@@ -128,6 +128,8 @@
     "notifEnabledDesc": "Interruptor general per a totes les notificacions (campana in-app i tots els bots connectats). Desactiva-ho per pausar-ho tot sense desconnectar res.",
     "dedupWindowLabel": "Finestra de deduplicació (min)",
     "dedupWindowDesc": "Evita que la mateixa notificació s'enviï més d'una vegada dins d'aquests minuts — impedeix duplicats, mai provoca repeticions.",
+    "downloadingThresholdLabel": "Notificació \"Descarregant\" al (%)",
+    "downloadingThresholdDesc": "La notificació intermèdia \"Descarregant\" només s'envia quan la descàrrega arriba a aquest percentatge. \"Descàrrega iniciada\" s'envia abans, tan aviat com la transferència comença de debò.",
     "discordWebhookLabel": "URL del webhook (difusió global, només admin)",
     "discordWebhookHint": "Es crea des d'<b>Ajustos del servidor → Integracions → Webhooks</b> a Discord — no al Developer Portal, que és per al pas següent. Exemple: <code>https://discord.com/api/webhooks/123456789012345678/AbCdEfGh...</code>",
     "discordBotNameLabel": "Nom del bot",

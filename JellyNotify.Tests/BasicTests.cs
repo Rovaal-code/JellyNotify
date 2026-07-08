@@ -1441,6 +1441,147 @@ public sealed class MapArrStatusTests
 }
 
 /// <summary>
+/// Tests for <see cref="ArrSyncService.ComputeStage"/> and its two new download sub-stages,
+/// which gate "download started" behind real transfer (progress &gt; 0 with an ETA) and the
+/// mid-download "Downloading" ping behind a configurable percentage threshold.
+/// </summary>
+public sealed class DownloadStageTests
+{
+    private static ArrQueueItem Downloading(double size, double sizeleft, string? timeleft) => new()
+    {
+        Status = "downloading",
+        TrackedDownloadState = "downloading",
+        Size = size,
+        Sizeleft = sizeleft,
+        Timeleft = timeleft
+    };
+
+    [Fact]
+    public void ComputeStage_JustAppeared_NoTransferOrEta_IsPending()
+    {
+        var stage = ArrSyncService.ComputeStage("downloading", Downloading(1000, 1000, null), 50);
+        Assert.Equal("downloading:pending", stage);
+    }
+
+    [Fact]
+    public void ComputeStage_ProgressWithoutEta_StaysPending()
+    {
+        // 20% done but no ETA yet — the user asked for both before "download started".
+        var stage = ArrSyncService.ComputeStage("downloading", Downloading(1000, 800, null), 50);
+        Assert.Equal("downloading:pending", stage);
+    }
+
+    [Fact]
+    public void ComputeStage_RealProgressWithEta_BelowThreshold_IsStarted()
+    {
+        var stage = ArrSyncService.ComputeStage("downloading", Downloading(1000, 800, "00:10:00"), 50); // 20%
+        Assert.Equal("downloading:started", stage);
+    }
+
+    [Fact]
+    public void ComputeStage_AtThreshold_IsHalf()
+    {
+        var stage = ArrSyncService.ComputeStage("downloading", Downloading(1000, 500, "00:05:00"), 50); // 50%
+        Assert.Equal("downloading:half", stage);
+    }
+
+    [Fact]
+    public void ComputeStage_AlreadyPastThresholdOnFirstPoll_JumpsStraightToHalf()
+    {
+        var stage = ArrSyncService.ComputeStage("downloading", Downloading(1000, 100, "00:01:00"), 50); // 90%
+        Assert.Equal("downloading:half", stage);
+    }
+
+    [Theory]
+    [InlineData("failed")]
+    [InlineData("warning")]
+    [InlineData("importpending")]
+    public void ComputeStage_NonDownloadingStatus_PassesThroughUnchanged(string status)
+    {
+        Assert.Equal(status, ArrSyncService.ComputeStage(status, new ArrQueueItem(), 50));
+    }
+
+    [Fact]
+    public void MapArrStatus_DownloadingStarted_ProducesDownloadStarted()
+    {
+        var (type, _, _) = ArrSyncService.MapArrStatus("downloading:started", "One Piece", "en-US");
+        Assert.Equal(NotificationType.DownloadStarted, type);
+    }
+
+    [Fact]
+    public void MapArrStatus_DownloadingHalf_ProducesDownloadingProgress()
+    {
+        var (type, title, _) = ArrSyncService.MapArrStatus("downloading:half", "One Piece", "es-ES");
+        Assert.Equal(NotificationType.DownloadProgress, type);
+        Assert.Equal("Descargando", title);
+    }
+
+    [Fact]
+    public void MapArrStatus_DownloadingPending_ProducesNoNotification()
+    {
+        var (type, _, _) = ArrSyncService.MapArrStatus("downloading:pending", "One Piece", "en-US");
+        Assert.Null(type);
+    }
+}
+
+/// <summary>
+/// Tests for <see cref="ArrMediaInfoLookup.Extract"/>, which pulls quality/audio/subtitle
+/// detail out of an imported *arr file for a Seerr-poll-driven "available" notification and
+/// normalizes the "/"-separated language lists into the comma form the card expects.
+/// </summary>
+public sealed class ArrMediaInfoExtractTests
+{
+    private static ArrQueueQuality Quality(string name) => new() { Quality = new ArrQualityInfo { Name = name } };
+
+    [Fact]
+    public void Extract_FullFile_NormalizesSlashSeparatedLanguagesToCommas()
+    {
+        var info = new ArrFileMediaInfo { AudioLanguages = "English/Japanese", Subtitles = "English/Spanish/French" };
+
+        var result = ArrMediaInfoLookup.Extract(Quality("Bluray-1080p"), info);
+
+        Assert.Equal("Bluray-1080p", result.Quality);
+        Assert.Equal("English, Japanese", result.AudioLanguages);
+        Assert.Equal("English, Spanish, French", result.SubtitleLanguages);
+        Assert.True(result.HasAny);
+    }
+
+    [Fact]
+    public void Extract_RepeatedPerTrackLanguages_AreDeduplicatedInFirstSeenOrder()
+    {
+        // Real Radarr shape: one entry per track, so languages repeat.
+        var info = new ArrFileMediaInfo { AudioLanguages = "spa/eng/spa/spa", Subtitles = "spa/spa" };
+
+        var result = ArrMediaInfoLookup.Extract(Quality("Bluray-1080p"), info);
+
+        Assert.Equal("spa, eng", result.AudioLanguages);
+        Assert.Equal("spa", result.SubtitleLanguages);
+    }
+
+    [Fact]
+    public void Extract_NoSubtitles_LeavesSubtitlesNull()
+    {
+        var info = new ArrFileMediaInfo { AudioLanguages = "English", Subtitles = "" };
+
+        var result = ArrMediaInfoLookup.Extract(Quality("WEBDL-720p"), info);
+
+        Assert.Equal("English", result.AudioLanguages);
+        Assert.Null(result.SubtitleLanguages);
+    }
+
+    [Fact]
+    public void Extract_NothingUsable_HasAnyIsFalse()
+    {
+        var result = ArrMediaInfoLookup.Extract(null, null);
+
+        Assert.Null(result.Quality);
+        Assert.Null(result.AudioLanguages);
+        Assert.Null(result.SubtitleLanguages);
+        Assert.False(result.HasAny);
+    }
+}
+
+/// <summary>
 /// Tests for <see cref="SeerrWebhookPayload"/> deserialization — the shape Overseerr/
 /// Jellyseerr's webhook agent sends, only ever read for its <c>request.request_id</c>.
 /// </summary>

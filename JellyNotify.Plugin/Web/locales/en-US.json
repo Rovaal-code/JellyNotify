@@ -128,6 +128,8 @@
     "notifEnabledDesc": "Master switch for every notification (in-app bell and all connected bots). Turn off to pause everything without disconnecting anything.",
     "dedupWindowLabel": "Deduplication window (min)",
     "dedupWindowDesc": "Prevents the same notification from being sent more than once within this many minutes — it stops duplicates, it never causes repeats.",
+    "downloadingThresholdLabel": "\"Downloading\" notification at (%)",
+    "downloadingThresholdDesc": "The mid-download \"Downloading\" notification is only sent once a download reaches this percentage. \"Download started\" still fires earlier, as soon as the transfer really begins.",
     "discordWebhookLabel": "Webhook URL (global, admin-only broadcast)",
     "discordWebhookHint": "Created from <b>Server Settings → Integrations → Webhooks</b> in Discord — not the Developer Portal, which is for the next step. Example: <code>https://discord.com/api/webhooks/123456789012345678/AbCdEfGh...</code>",
     "discordBotNameLabel": "Bot name",
