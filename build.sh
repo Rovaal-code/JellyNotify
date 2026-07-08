@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$SCRIPT_DIR/JellyNotify.Plugin"
 OUTPUT_DIR="$SCRIPT_DIR/dist"
 RELEASES_DIR="$SCRIPT_DIR/releases"
-VERSION="0.1.0.4"
+VERSION="0.1.0.5"
 if [[ -x "/home/alvaro/.dotnet/dotnet" ]]; then
     export PATH="$PATH:/home/alvaro/.dotnet"
 fi
@@ -101,14 +101,11 @@ filepath = sys.argv[3]
 timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 version_tag = version[:-2] if version.endswith('.0') else version
 source_url = f'https://github.com/Rovaal-code/JellyNotify/releases/download/v{version_tag}/jellynotify_{version}.zip'
-changelog = '''JellyNotify v0.1.0.4 - smarter download notifications and richer availability cards
+changelog = '''JellyNotify v0.1.0.5 - in-app panel now localizes the Downloading notification
 
 Compatible with Jellyfin 10.11.11 (the version this build targets and was verified against), Seerr 3.3.0, Radarr 6.1.1.10360, Sonarr 4.0.17.2952, and Jellyfin Enhanced 11.12.0.0.
 
-- Download notifications now reflect the real transfer instead of the bare grab: the instant, empty Download started that used to fire the moment Radarr/Sonarr picked a release (no progress, ETA unknown) is gone.
-- Download started now fires from the queue poll, once a download is genuinely transferring - real progress with an ETA.
-- New Downloading notification for the mid-download update, sent once a download reaches a configurable percentage (default 50%). Adjust it in the notification settings.
-- Contenido disponible notifications driven by Seerr status now include Quality, Audio and Subtitles, looked up from the imported file in Sonarr/Radarr - previously only the webhook path carried that detail.'''
+- The new Downloading notification now re-localizes correctly in the in-app bell panel and toasts when the interface language differs from the stored title, matching the other download notifications. Bots were already unaffected.'''
 with open(filepath, 'r', encoding='utf-8') as f:
     data = json.load(f)
 for plugin in data:

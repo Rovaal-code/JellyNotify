@@ -246,6 +246,7 @@
             'Request declined': strings.requestDeclined,
             'Request failed': strings.requestFailed,
             'Download started': strings.downloadStarted,
+            'Downloading': strings.downloading,
             'Download warning': strings.downloadWarning,
             'Download failed': strings.downloadFailed,
             'Media available': strings.mediaAvailable,

@@ -55,6 +55,7 @@
   "requestDeclined": "Solicitud rechazada",
   "requestFailed": "Solicitud fallida",
   "downloadStarted": "Descarga iniciada",
+  "downloading": "Descargando",
   "downloadWarning": "Problema de descarga",
   "downloadFailed": "Descarga fallida",
   "mediaAvailable": "Contenido disponible",
