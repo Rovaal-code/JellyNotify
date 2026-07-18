@@ -34,6 +34,9 @@ public interface ISonarrApiClient
     /// <summary>Creates a new Connect notification in Sonarr.</summary>
     Task<(ArrNotificationResource? Created, string? Error)> CreateNotificationAsync(string serverUrl, string apiKey, ArrNotificationResource notification, bool ignoreSsl = false, CancellationToken cancellationToken = default);
 
+    /// <summary>Updates an existing Connect notification in Sonarr (by its <see cref="ArrNotificationResource.Id"/>) — used to repair a "JellyNotify" connection whose event checkboxes or URL have drifted from what auto-configure originally set.</summary>
+    Task<(ArrNotificationResource? Updated, string? Error)> UpdateNotificationAsync(string serverUrl, string apiKey, ArrNotificationResource notification, bool ignoreSsl = false, CancellationToken cancellationToken = default);
+
     /// <summary>Asks Sonarr to send a real test call for a notification — works even before it's been created (id=0), so this can confirm webhook deliverability ahead of actually creating anything.</summary>
     Task<(bool Success, string? Error)> TestNotificationAsync(string serverUrl, string apiKey, ArrNotificationResource candidate, bool ignoreSsl = false, CancellationToken cancellationToken = default);
 }
@@ -69,6 +72,9 @@ public interface IRadarrApiClient
 
     /// <summary>Creates a new Connect notification in Radarr.</summary>
     Task<(ArrNotificationResource? Created, string? Error)> CreateNotificationAsync(string serverUrl, string apiKey, ArrNotificationResource notification, bool ignoreSsl = false, CancellationToken cancellationToken = default);
+
+    /// <summary>Updates an existing Connect notification in Radarr (by its <see cref="ArrNotificationResource.Id"/>) — used to repair a "JellyNotify" connection whose event checkboxes or URL have drifted from what auto-configure originally set.</summary>
+    Task<(ArrNotificationResource? Updated, string? Error)> UpdateNotificationAsync(string serverUrl, string apiKey, ArrNotificationResource notification, bool ignoreSsl = false, CancellationToken cancellationToken = default);
 
     /// <summary>Asks Radarr to send a real test call for a notification — works even before it's been created (id=0), so this can confirm webhook deliverability ahead of actually creating anything.</summary>
     Task<(bool Success, string? Error)> TestNotificationAsync(string serverUrl, string apiKey, ArrNotificationResource candidate, bool ignoreSsl = false, CancellationToken cancellationToken = default);

@@ -156,6 +156,17 @@ public static class AdminTestMessages
         "Ya existe una conexión de JellyNotify en esta instancia — no se ha creado ninguna nueva.",
         "Ja existeix una connexió de JellyNotify en aquesta instància — no se n'ha creat cap de nova.");
 
+    public static string ArrWebhookRepaired(string language) => Pick(language,
+        "Found the connection but its event checkboxes (Grab/Download/Upgrade) or URL were out of date — fixed it. Instant notifications are now enabled.",
+        "Se encontró la conexión pero sus casillas de evento (Grab/Download/Upgrade) o su URL estaban desactualizadas — se ha corregido. Las notificaciones instantáneas se han activado.",
+        "S'ha trobat la connexió però les seves caselles d'esdeveniment (Grab/Download/Upgrade) o la seva URL estaven desactualitzades — s'ha corregit. Les notificacions instantànies s'han activat.");
+
+    public static string ArrWebhookRepairFailed(string reason, string language) => Format(language,
+        "Found an existing JellyNotify connection with missing event checkboxes, but couldn't fix it automatically ({0}). Enable Grab, Download, and Upgrade manually in Settings → Connect → JellyNotify.",
+        "Se encontró una conexión de JellyNotify existente con casillas de evento sin marcar, pero no se pudo corregir automáticamente ({0}). Activa Grab, Download y Upgrade a mano en Settings → Connect → JellyNotify.",
+        "S'ha trobat una connexió de JellyNotify existent amb caselles d'esdeveniment sense marcar, però no s'ha pogut corregir automàticament ({0}). Activa Grab, Download i Upgrade a mà a Settings → Connect → JellyNotify.",
+        reason);
+
     public static string ArrWebhookSchemaNotFound(string language) => Pick(language,
         "This version doesn't expose the Webhook notification template via its API — set it up manually using the Copy webhook URL button.",
         "Esta versión no expone la plantilla de notificación Webhook por su API — configúralo a mano usando el botón de copiar URL del webhook.",

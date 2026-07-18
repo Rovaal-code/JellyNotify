@@ -345,6 +345,7 @@ public sealed class AdminController : ControllerBase
             (url, key, ignoreSsl, ct) => _sonarr.GetNotificationsAsync(url, key, ignoreSsl, ct),
             (url, key, ignoreSsl, ct) => _sonarr.GetNotificationSchemasAsync(url, key, ignoreSsl, ct),
             (url, key, notification, ignoreSsl, ct) => _sonarr.CreateNotificationAsync(url, key, notification, ignoreSsl, ct),
+            (url, key, notification, ignoreSsl, ct) => _sonarr.UpdateNotificationAsync(url, key, notification, ignoreSsl, ct),
             (url, key, candidate, ignoreSsl, ct) => _sonarr.TestNotificationAsync(url, key, candidate, ignoreSsl, ct),
             language).ConfigureAwait(false));
     }
@@ -371,6 +372,7 @@ public sealed class AdminController : ControllerBase
             (url, key, ignoreSsl, ct) => _radarr.GetNotificationsAsync(url, key, ignoreSsl, ct),
             (url, key, ignoreSsl, ct) => _radarr.GetNotificationSchemasAsync(url, key, ignoreSsl, ct),
             (url, key, notification, ignoreSsl, ct) => _radarr.CreateNotificationAsync(url, key, notification, ignoreSsl, ct),
+            (url, key, notification, ignoreSsl, ct) => _radarr.UpdateNotificationAsync(url, key, notification, ignoreSsl, ct),
             (url, key, candidate, ignoreSsl, ct) => _radarr.TestNotificationAsync(url, key, candidate, ignoreSsl, ct),
             language).ConfigureAwait(false));
     }
@@ -380,9 +382,23 @@ public sealed class AdminController : ControllerBase
     /// fields, cloned) with just the "url" field overridden — shared by the capability check
     /// (tested before creation) and the actual auto-configure action (used to create it).
     /// </summary>
-    private static ArrNotificationResource BuildArrWebhookCandidate(ArrNotificationResource schema, string arrWebhookUrl)
+    private static ArrNotificationResource BuildArrWebhookCandidate(ArrNotificationResource schema, string arrWebhookUrl) =>
+        BuildArrWebhookResource(schema, arrWebhookUrl, id: 0, name: "JellyNotify");
+
+    /// <summary>
+    /// Rebuilds an existing "JellyNotify" connection with the event flags and URL it should
+    /// have — used to repair one that drifted (e.g. an admin unchecked "On Import" in
+    /// Sonarr/Radarr's own UI, or the connection predates a plugin version that set these
+    /// correctly). Keeps the existing entry's id/name/implementation so this is an update, not
+    /// a duplicate.
+    /// </summary>
+    private static ArrNotificationResource BuildArrWebhookRepair(ArrNotificationResource existing, string arrWebhookUrl) =>
+        BuildArrWebhookResource(existing, arrWebhookUrl, existing.Id, existing.Name);
+
+    /// <summary>Shared field-cloning + event-flag logic behind <see cref="BuildArrWebhookCandidate"/> and <see cref="BuildArrWebhookRepair"/>.</summary>
+    private static ArrNotificationResource BuildArrWebhookResource(ArrNotificationResource source, string arrWebhookUrl, int id, string name)
     {
-        var fields = schema.Fields.Select(f => new ArrNotificationField { Name = f.Name, Value = f.Value }).ToList();
+        var fields = source.Fields.Select(f => new ArrNotificationField { Name = f.Name, Value = f.Value }).ToList();
         var urlField = fields.FirstOrDefault(f => string.Equals(f.Name, "url", StringComparison.OrdinalIgnoreCase));
         if (urlField is not null)
         {
@@ -395,15 +411,31 @@ public sealed class AdminController : ControllerBase
 
         return new ArrNotificationResource
         {
-            Name = "JellyNotify",
-            Implementation = schema.Implementation,
-            ImplementationName = schema.ImplementationName,
-            ConfigContract = schema.ConfigContract,
+            Id = id,
+            Name = name,
+            Implementation = source.Implementation,
+            ImplementationName = source.ImplementationName,
+            ConfigContract = source.ConfigContract,
             OnDownload = true,
             OnUpgrade = true,
             OnGrab = true,
             Fields = fields
         };
+    }
+
+    /// <summary>
+    /// Whether an existing "JellyNotify" connection needs repairing: any of the three event
+    /// flags this plugin depends on (grab/download/upgrade) are off, or its "url" field no
+    /// longer matches the current shared arr webhook URL (e.g. the secret was rotated).
+    /// </summary>
+    private static bool ArrWebhookNeedsRepair(ArrNotificationResource existing, string expectedUrl)
+    {
+        var urlField = existing.Fields.FirstOrDefault(f => string.Equals(f.Name, "url", StringComparison.OrdinalIgnoreCase));
+        var currentUrl = urlField?.Value?.ToString();
+        return !existing.OnDownload
+            || !existing.OnUpgrade
+            || !existing.OnGrab
+            || !string.Equals(currentUrl, expectedUrl, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -423,6 +455,7 @@ public sealed class AdminController : ControllerBase
         Func<string, string, bool, CancellationToken, Task<IReadOnlyList<ArrNotificationResource>>> getNotifications,
         Func<string, string, bool, CancellationToken, Task<IReadOnlyList<ArrNotificationResource>>> getSchemas,
         Func<string, string, ArrNotificationResource, bool, CancellationToken, Task<(ArrNotificationResource? Created, string? Error)>> createNotification,
+        Func<string, string, ArrNotificationResource, bool, CancellationToken, Task<(ArrNotificationResource? Updated, string? Error)>> updateNotification,
         Func<string, string, ArrNotificationResource, bool, CancellationToken, Task<(bool Success, string? Error)>> testNotification,
         string language)
     {
@@ -440,10 +473,31 @@ public sealed class AdminController : ControllerBase
         var existingMatch = existing.FirstOrDefault(n => string.Equals(n.Name, "JellyNotify", StringComparison.OrdinalIgnoreCase));
         if (existingMatch is not null)
         {
+            var repaired = false;
+            if (ArrWebhookNeedsRepair(existingMatch, arrWebhookUrl))
+            {
+                var repair = BuildArrWebhookRepair(existingMatch, arrWebhookUrl);
+                var (updated, updateError) = await updateNotification(serverUrl, apiKey, repair, ignoreSsl, ct).ConfigureAwait(false);
+                if (updated is not null)
+                {
+                    existingMatch = updated;
+                    repaired = true;
+                }
+                else
+                {
+                    return new AutoConfigureWebhookResponse { Success = false, Message = AdminTestMessages.ArrWebhookRepairFailed(updateError ?? AdminTestMessages.ArrWebhookTestNoDetail(language), language) };
+                }
+            }
+
             await testNotification(serverUrl, apiKey, existingMatch, ignoreSsl, ct).ConfigureAwait(false);
             config.ArrWebhookEnabled = true;
             Plugin.Instance!.SavePluginConfiguration(config);
-            return new AutoConfigureWebhookResponse { Success = true, AlreadyExists = true, Message = AdminTestMessages.ArrWebhookAlreadyConfigured(language) };
+            return new AutoConfigureWebhookResponse
+            {
+                Success = true,
+                AlreadyExists = true,
+                Message = repaired ? AdminTestMessages.ArrWebhookRepaired(language) : AdminTestMessages.ArrWebhookAlreadyConfigured(language)
+            };
         }
 
         var schemas = await getSchemas(serverUrl, apiKey, ignoreSsl, ct).ConfigureAwait(false);

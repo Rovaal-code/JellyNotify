@@ -175,6 +175,28 @@ public sealed class SonarrApiClient : ISonarrApiClient
     }
 
     /// <inheritdoc />
+    public async Task<(ArrNotificationResource? Updated, string? Error)> UpdateNotificationAsync(string serverUrl, string apiKey, ArrNotificationResource notification, bool ignoreSsl = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var client = CreateClient(serverUrl, apiKey, ignoreSsl);
+            var response = await client.PutAsJsonAsync($"api/v3/notification/{notification.Id}", notification, JsonOptions, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return (null, await ExtractValidationError(response, cancellationToken).ConfigureAwait(false));
+            }
+
+            var updated = await response.Content.ReadFromJsonAsync<ArrNotificationResource>(JsonOptions, cancellationToken).ConfigureAwait(false);
+            return (updated, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating Sonarr notification {Id} on {Url}", notification.Id, serverUrl);
+            return (null, ex.Message);
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<(bool Success, string? Error)> TestNotificationAsync(string serverUrl, string apiKey, ArrNotificationResource candidate, bool ignoreSsl = false, CancellationToken cancellationToken = default)
     {
         try
@@ -451,6 +473,28 @@ public sealed class RadarrApiClient : IRadarrApiClient
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating Radarr notification on {Url}", serverUrl);
+            return (null, ex.Message);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<(ArrNotificationResource? Updated, string? Error)> UpdateNotificationAsync(string serverUrl, string apiKey, ArrNotificationResource notification, bool ignoreSsl = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var client = CreateClient(serverUrl, apiKey, ignoreSsl);
+            var response = await client.PutAsJsonAsync($"api/v3/notification/{notification.Id}", notification, JsonOptions, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return (null, await ExtractValidationError(response, cancellationToken).ConfigureAwait(false));
+            }
+
+            var updated = await response.Content.ReadFromJsonAsync<ArrNotificationResource>(JsonOptions, cancellationToken).ConfigureAwait(false);
+            return (updated, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating Radarr notification {Id} on {Url}", notification.Id, serverUrl);
             return (null, ex.Message);
         }
     }

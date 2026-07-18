@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$SCRIPT_DIR/JellyNotify.Plugin"
 OUTPUT_DIR="$SCRIPT_DIR/dist"
 RELEASES_DIR="$SCRIPT_DIR/releases"
-VERSION="0.1.0.5"
+VERSION="0.1.0.6"
 if [[ -x "/home/alvaro/.dotnet/dotnet" ]]; then
     export PATH="$PATH:/home/alvaro/.dotnet"
 fi
@@ -101,11 +101,11 @@ filepath = sys.argv[3]
 timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 version_tag = version[:-2] if version.endswith('.0') else version
 source_url = f'https://github.com/Rovaal-code/JellyNotify/releases/download/v{version_tag}/jellynotify_{version}.zip'
-changelog = '''JellyNotify v0.1.0.5 - in-app panel now localizes the Downloading notification
+changelog = '''JellyNotify v0.1.0.6 - Sonarr/Radarr webhook auto-configure now self-repairs
 
 Compatible with Jellyfin 10.11.11 (the version this build targets and was verified against), Seerr 3.3.0, Radarr 6.1.1.10360, Sonarr 4.0.17.2952, and Jellyfin Enhanced 11.12.0.0.
 
-- The new Downloading notification now re-localizes correctly in the in-app bell panel and toasts when the interface language differs from the stored title, matching the other download notifications. Bots were already unaffected.'''
+- Auto-configuring the Sonarr/Radarr webhook now checks an existing JellyNotify connection's Grab/Download/Upgrade checkboxes and URL, and repairs them if they drifted, instead of assuming a connection with that name is already correct. Fixes availability notifications silently never firing for TV episodes when those checkboxes ended up unchecked in Sonarr/Radarr.'''
 with open(filepath, 'r', encoding='utf-8') as f:
     data = json.load(f)
 for plugin in data:
