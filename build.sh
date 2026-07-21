@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$SCRIPT_DIR/JellyNotify.Plugin"
 OUTPUT_DIR="$SCRIPT_DIR/dist"
 RELEASES_DIR="$SCRIPT_DIR/releases"
-VERSION="0.1.0.6"
+VERSION="0.1.0.7"
 if [[ -x "/home/alvaro/.dotnet/dotnet" ]]; then
     export PATH="$PATH:/home/alvaro/.dotnet"
 fi
@@ -101,11 +101,11 @@ filepath = sys.argv[3]
 timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 version_tag = version[:-2] if version.endswith('.0') else version
 source_url = f'https://github.com/Rovaal-code/JellyNotify/releases/download/v{version_tag}/jellynotify_{version}.zip'
-changelog = '''JellyNotify v0.1.0.6 - Sonarr/Radarr webhook auto-configure now self-repairs
+changelog = '''JellyNotify v0.1.0.7 - fixes updates silently reverting to 0.1.0.3 after restart
 
 Compatible with Jellyfin 10.11.11 (the version this build targets and was verified against), Seerr 3.3.0, Radarr 6.1.1.10360, Sonarr 4.0.17.2952, and Jellyfin Enhanced 11.12.0.0.
 
-- Auto-configuring the Sonarr/Radarr webhook now checks an existing JellyNotify connection's Grab/Download/Upgrade checkboxes and URL, and repairs them if they drifted, instead of assuming a connection with that name is already correct. Fixes availability notifications silently never firing for TV episodes when those checkboxes ended up unchecked in Sonarr/Radarr.'''
+- The plugin project file had AssemblyVersion/FileVersion hardcoded to 0.1.0.3 instead of following the release version passed at build time. Every build since 0.1.0.4 packaged the correct version in its filename and manifest entry, but the compiled DLL still reported itself as 0.1.0.3 once Jellyfin loaded it - so right after installing an update it looked correct, but after restarting Jellyfin the installed plugin (and its logo) fell back to 0.1.0.3. AssemblyVersion/FileVersion now follow the real build version, so installed versions stick across restarts.'''
 with open(filepath, 'r', encoding='utf-8') as f:
     data = json.load(f)
 for plugin in data:
