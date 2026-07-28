@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$SCRIPT_DIR/JellyNotify.Plugin"
 OUTPUT_DIR="$SCRIPT_DIR/dist"
 RELEASES_DIR="$SCRIPT_DIR/releases"
-VERSION="0.1.0.7"
+VERSION="0.1.0.8"
 if [[ -x "/home/alvaro/.dotnet/dotnet" ]]; then
     export PATH="$PATH:/home/alvaro/.dotnet"
 fi
@@ -101,11 +101,11 @@ filepath = sys.argv[3]
 timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 version_tag = version[:-2] if version.endswith('.0') else version
 source_url = f'https://github.com/Rovaal-code/JellyNotify/releases/download/v{version_tag}/jellynotify_{version}.zip'
-changelog = '''JellyNotify v0.1.0.7 - fixes updates silently reverting to 0.1.0.3 after restart
+changelog = '''JellyNotify v0.1.0.8 - fixes silent failure of the Sonarr/Radarr availability webhook
 
 Compatible with Jellyfin 10.11.11 (the version this build targets and was verified against), Seerr 3.3.0, Radarr 6.1.1.10360, Sonarr 4.0.17.2952, and Jellyfin Enhanced 11.12.0.0.
 
-- The plugin project file had AssemblyVersion/FileVersion hardcoded to 0.1.0.3 instead of following the release version passed at build time. Every build since 0.1.0.4 packaged the correct version in its filename and manifest entry, but the compiled DLL still reported itself as 0.1.0.3 once Jellyfin loaded it - so right after installing an update it looked correct, but after restarting Jellyfin the installed plugin (and its logo) fell back to 0.1.0.3. AssemblyVersion/FileVersion now follow the real build version, so installed versions stick across restarts.'''
+- The instant Sonarr/Radarr webhook that reports a media Download/Upgrade (import) event was silently rejected by Jellyfin with a 400 error before ever reaching the plugin's own code, because the payload models expected episodeFile.quality/movieFile.quality as a nested object when Sonarr/Radarr actually send it as a plain string. This affected new episodes of an already-available ongoing series the most, since the Seerr polling path has no other way to detect that a single new episode arrived once the show is already marked available - so the Available notification never fired for it, even though Download started worked fine (that one comes from a separate, unaffected polling path). Download/Upgrade webhook calls are now accepted and processed correctly.'''
 with open(filepath, 'r', encoding='utf-8') as f:
     data = json.load(f)
 for plugin in data:

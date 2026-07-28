@@ -78,28 +78,12 @@ public sealed class ArrWebhookEpisode
     public int SeasonNumber { get; set; }
 }
 
-/// <summary>Quality info embedded in an episode/movie file.</summary>
-public sealed class ArrWebhookQualityWrapper
-{
-    /// <summary>Gets or sets the inner quality descriptor.</summary>
-    [JsonPropertyName("quality")]
-    public ArrWebhookQuality? Quality { get; set; }
-}
-
-/// <summary>The quality name itself.</summary>
-public sealed class ArrWebhookQuality
-{
-    /// <summary>Gets or sets the quality/profile name (e.g. "WEBDL-1080p").</summary>
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
-}
-
 /// <summary>An imported episode or movie file, as embedded in a Sonarr/Radarr webhook payload.</summary>
 public sealed class ArrWebhookMediaFile
 {
-    /// <summary>Gets or sets the quality this file was imported at.</summary>
+    /// <summary>Gets or sets the quality this file was imported at. Unlike Grab's nested <see cref="ArrWebhookRelease"/>, Sonarr/Radarr send this as a plain resolved string (e.g. "WEBDL-1080p"), not a nested object — sending it as an object here caused every Download/Upgrade webhook call to fail model binding with a 400 before ever reaching the controller.</summary>
     [JsonPropertyName("quality")]
-    public ArrWebhookQualityWrapper? Quality { get; set; }
+    public string? Quality { get; set; }
 
     /// <summary>Gets or sets the file's embedded media info — this is what supplies Audio/Subtítulos for free, without an extra API call.</summary>
     [JsonPropertyName("mediaInfo")]

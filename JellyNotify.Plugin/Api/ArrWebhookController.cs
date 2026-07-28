@@ -123,7 +123,7 @@ public sealed class ArrWebhookController : ControllerBase
         var mediaFile = payload.EpisodeFile ?? payload.MovieFile;
         var audioLanguages = JoinOrNull(mediaFile?.MediaInfo?.AudioLanguages);
         var subtitleLanguages = JoinOrNull(mediaFile?.MediaInfo?.Subtitles);
-        var quality = mediaFile?.Quality?.Quality?.Name;
+        var quality = mediaFile?.Quality;
         var season = payload.Episodes?.FirstOrDefault()?.SeasonNumber;
 
         foreach (var snapshot in matched.Where(s => !string.IsNullOrWhiteSpace(s.JellyfinUserId)))
