@@ -86,6 +86,14 @@
     "guid": "05cac539-35ae-4f0d-be40-5f0eabd7f43c",
     "versions": [
       {
+        "version": "0.1.4.0",
+        "changelog": "JellyProvider Sections v0.1.4.0 - the real TMDb and Seerr marks\n\nThe integration state in the Secciones tab now shows each service's own logo instead of a stand-in glyph.\n\nBoth are bundled with the plugin and served from it, rather than linked from a CDN: the administration page keeps working on a server with no route to the internet, and opening it does not tell a third party who is looking at it. Same reason the provider logos and the card artwork are already cached and served locally.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Rovaal-code/JellyProviderSections/releases/download/v0.1.4/jellyprovidersections_0.1.4.0.zip",
+        "checksum": "e0926ec06b00041955a3f420e01ef729",
+        "timestamp": "2026-07-29T20:47:45Z"
+      },
+      {
         "version": "0.1.3.0",
         "changelog": "JellyProvider Sections v0.1.3.0 - renamed\n\nThe plugin is now called **JellyProvider Sections**, everywhere: the plugin catalogue, the entry in the dashboard, the configuration page, the scheduled task, the log lines and the documentation.\n\nNothing to do on your side. The plugin is matched by its id, which has not changed, so the update lands on top of the old one and keeps every section, key and setting exactly as it was. The API routes, the configuration file and the section ids are all unchanged too.",
         "targetAbi": "10.11.0.0",
