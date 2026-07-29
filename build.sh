@@ -87,9 +87,14 @@ echo ""
 echo "✓ MD5 checksum: $CHECKSUM"
 echo ""
 
-# ── Update manifest.json and repository/manifest.json ──────────────────
+# ── Update the manifests ───────────────────────────────────────────────
+# The catalogue an administrator adds to Jellyfin now lives in its own neutral
+# repository, listing every plugin. The two copies here are kept because one of
+# them is referenced from the Jellyfin Universal Plugin Repo; letting them go
+# stale would serve a checksum that no longer matches the release.
 MANIFEST_PATH="$SCRIPT_DIR/manifest.json"
-for manifest_file in "$MANIFEST_PATH" "$SCRIPT_DIR/repository/manifest.json"; do
+CATALOGUE_MANIFEST="/home/alvaro/Descargas/jellyfin-plugins/manifest.json"
+for manifest_file in "$CATALOGUE_MANIFEST" "$MANIFEST_PATH" "$SCRIPT_DIR/repository/manifest.json"; do
     if [[ -f "$manifest_file" ]]; then
         echo "→ Updating $(basename "$manifest_file")..."
         python3 -c "
