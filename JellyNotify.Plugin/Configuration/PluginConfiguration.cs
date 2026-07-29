@@ -69,6 +69,16 @@ public class PluginConfiguration : BasePluginConfiguration
     public NotificationSettings NotificationSettings { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the one-time migration from the old
+    /// per-instance <see cref="ArrInstanceConfig.PollingIntervalSeconds"/> to the global
+    /// <see cref="NotificationSettings.DownloadPollingIntervalSeconds"/> has already run. A
+    /// flag rather than a value comparison, because "the global happens to equal the legacy
+    /// minimum" is indistinguishable from "not migrated yet", and re-running would undo any
+    /// later change the admin made by hand.
+    /// </summary>
+    public bool LegacyPollingIntervalMigrated { get; set; }
+
+    /// <summary>
     /// Gets or sets the external channel settings (Discord, Telegram, etc.).
     /// </summary>
     public ExternalChannelSettings ExternalChannelSettings { get; set; }
@@ -109,6 +119,41 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the WhatsApp (wa.me link mode) channel settings.
     /// </summary>
     public WhatsAppChannelSettings WhatsAppSettings { get; set; } = new();
+
+    /// <summary>
+    /// Carries a pre-existing per-instance polling interval over to the global
+    /// <see cref="NotificationSettings.DownloadPollingIntervalSeconds"/>, once, on the first
+    /// startup after the setting moved. Adopts the <em>minimum</em> across enabled instances
+    /// because that is exactly what the background service already did at runtime, so the
+    /// effective polling rate is unchanged by the upgrade. Without this, an admin who had
+    /// deliberately chosen 30s would silently be moved to the new 60s default.
+    /// </summary>
+    /// <returns><see langword="true"/> if the configuration was modified and needs saving.</returns>
+    public bool MigrateLegacyPollingInterval()
+    {
+        if (LegacyPollingIntervalMigrated)
+        {
+            return false;
+        }
+
+        LegacyPollingIntervalMigrated = true;
+        NotificationSettings ??= new NotificationSettings();
+
+        var legacy = (SonarrInstances ?? new List<ArrInstanceConfig>())
+            .Concat(RadarrInstances ?? new List<ArrInstanceConfig>())
+            .Where(i => i.Enabled && i.PollingIntervalSeconds > 0)
+            .Select(i => i.PollingIntervalSeconds)
+            .ToList();
+
+        // Nothing configured yet (fresh install) — the new default stands, and the flag is
+        // still set so this never runs again.
+        if (legacy.Count > 0)
+        {
+            NotificationSettings.DownloadPollingIntervalSeconds = legacy.Min();
+        }
+
+        return true;
+    }
 
     /// <summary>
     /// Preserves existing secret values in the persisted configuration when
@@ -242,6 +287,12 @@ public class PluginConfiguration : BasePluginConfiguration
         }
 
         incoming.ArrWebhookLastReceivedAt = existing.ArrWebhookLastReceivedAt;
+
+        // Same reasoning for the legacy-polling migration flag: the config form doesn't know
+        // it exists, so letting a save reset it to false would make the migration run again on
+        // the next restart and stomp whatever global interval the admin had just chosen with
+        // the old per-instance minimum.
+        incoming.LegacyPollingIntervalMigrated = existing.LegacyPollingIntervalMigrated;
     }
 }
 
@@ -376,10 +427,13 @@ public class ArrInstanceConfig
     public bool IgnoreSslErrors { get; set; }
 
     /// <summary>
-    /// Gets or sets the polling interval in seconds for this instance's download queue.
-    /// Sonarr/Radarr have no webhook event for "still downloading" (only grab/import), so
-    /// there is no way to learn about progress/stalled/failed state except by asking — this
-    /// governs only that check, not availability, which arrives instantly via the webhook.
+    /// Gets or sets the legacy per-instance polling interval. <strong>No longer used</strong> —
+    /// superseded by <see cref="NotificationSettings.DownloadPollingIntervalSeconds"/>, and no
+    /// longer shown in the admin UI. It was never really per-instance: the background service
+    /// ran a single shared cycle and took the minimum across every enabled instance, so setting
+    /// it on Radarr silently changed Sonarr's polling too. Kept for one version purely so
+    /// <see cref="PluginConfiguration.MigrateLegacyPollingInterval"/> can carry a user's old
+    /// choice over to the global setting instead of silently resetting them to the new default.
     /// </summary>
     public int PollingIntervalSeconds { get; set; } = 300;
 }
@@ -410,12 +464,31 @@ public class NotificationSettings
 
     /// <summary>
     /// Gets or sets the download percentage at or above which the "Downloading" progress
-    /// notification is sent by the Sonarr/Radarr queue poll. The earlier "Download started"
-    /// notification still fires once real transfer begins (progress &gt; 0 with an ETA); this
-    /// only gates the second, mid-download "Downloading" ping so it isn't sent the instant a
-    /// download appears. Default 50 (%).
+    /// notification is sent by the Sonarr/Radarr queue poll. This is strictly the *second*
+    /// notification in the sequence: it is only ever sent after "Download started" has gone
+    /// out for the same download, so a user can never receive "Downloading 88%" without
+    /// having been told the download began. Default 50 (%).
     /// </summary>
     public int DownloadingNotifyThresholdPercent { get; set; } = 50;
+
+    /// <summary>
+    /// Gets or sets how often, in seconds, the Sonarr/Radarr download queues are polled.
+    /// This is a single global cycle covering every enabled instance — Sonarr/Radarr have no
+    /// webhook for download progress (only grab/import), so progress, stalled and failed state
+    /// can only be learned by asking. Availability is unaffected: it arrives instantly via the
+    /// *arr webhook regardless of this value. Default 60 (s), down from the old 300 because a
+    /// cycle with an empty queue now costs a single API call per instance.
+    /// </summary>
+    public int DownloadPollingIntervalSeconds { get; set; } = 60;
+
+    /// <summary>
+    /// Gets or sets how many hours a download may sit in the queue without its percentage
+    /// moving before it is reported as stalled. Covers the case Sonarr/Radarr never report as
+    /// an error — a torrent with no seeds sits at 3% indefinitely — which would otherwise leave
+    /// the requester watching "Downloading 3%" forever. Fires exactly once per download, then
+    /// goes quiet permanently. Default 6 (h); 0 disables the check.
+    /// </summary>
+    public int StalledDownloadHours { get; set; } = 6;
 }
 
 /// <summary>

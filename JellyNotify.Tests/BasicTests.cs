@@ -56,52 +56,156 @@ public sealed class DeduplicationStoreTests
 }
 
 /// <summary>
-/// Tests for <see cref="DownloadProgressStore"/>.
+/// Tests for <see cref="JsonDownloadProgressStore"/>, whose whole reason for being on disk is
+/// that its flags suppress repeat notifications — so the round-trip is the test that matters.
 /// </summary>
-public sealed class DownloadProgressStoreTests
+public sealed class JsonDownloadProgressStoreTests : IDisposable
 {
+    private readonly string _filePath = Path.Combine(
+        Path.GetTempPath(), $"jellynotify-progress-{Guid.NewGuid():N}.json");
+
+    private JsonDownloadProgressStore NewStore() =>
+        new(NullLogger<JsonDownloadProgressStore>.Instance, _filePath);
+
     [Fact]
-    public void GetProgress_ReturnsNull_WhenNotTracked()
+    public async Task Get_ReturnsNull_WhenNotTracked()
     {
-        var store = new DownloadProgressStore();
-        Assert.Null(store.GetProgress("unknown-key"));
+        var store = NewStore();
+        await store.LoadAsync();
+        Assert.Null(store.Get("unknown-key"));
     }
 
     [Fact]
-    public void SetAndGet_ReturnsExpectedStatus()
+    public async Task SetAndGet_RoundTripsState()
     {
-        var store = new DownloadProgressStore();
-        store.SetProgress("key1", "downloading");
-        Assert.Equal("downloading", store.GetProgress("key1"));
+        var store = NewStore();
+        await store.LoadAsync();
+        store.Set("key1", new DownloadProgressState { Stage = "downloading:started", StartedNotified = true });
+
+        var state = store.Get("key1");
+        Assert.NotNull(state);
+        Assert.Equal("downloading:started", state!.Stage);
+        Assert.True(state.StartedNotified);
     }
 
     [Fact]
-    public void SetProgress_OverwritesPreviousStatus()
+    public async Task Flush_ThenReload_PreservesFlags()
     {
-        var store = new DownloadProgressStore();
-        store.SetProgress("key1", "downloading");
-        store.SetProgress("key1", "imported");
-        Assert.Equal("imported", store.GetProgress("key1"));
+        var store = NewStore();
+        await store.LoadAsync();
+        store.Set("key1", new DownloadProgressState
+        {
+            Stage = "stalled:notified",
+            StartedNotified = true,
+            StalledNotified = true,
+            WarningStreak = 2,
+            LastProgress = 3.5,
+            LastMovementAtUtc = new DateTime(2026, 7, 30, 10, 0, 0, DateTimeKind.Utc)
+        });
+        await store.FlushAsync();
+
+        // A fresh instance stands in for a Jellyfin restart: without this surviving, the
+        // watchdog would re-warn about the same stuck download on every restart.
+        var reloaded = NewStore();
+        await reloaded.LoadAsync();
+
+        var state = reloaded.Get("key1");
+        Assert.NotNull(state);
+        Assert.True(state!.StalledNotified);
+        Assert.True(state.StartedNotified);
+        Assert.Equal(2, state.WarningStreak);
+        Assert.Equal(3.5, state.LastProgress);
+        Assert.Equal(new DateTime(2026, 7, 30, 10, 0, 0, DateTimeKind.Utc), state.LastMovementAtUtc);
     }
 
     [Fact]
-    public void Remove_ClearsProgress()
+    public async Task Remove_ClearsState_AndSurvivesFlush()
     {
-        var store = new DownloadProgressStore();
-        store.SetProgress("key1", "downloading");
+        var store = NewStore();
+        await store.LoadAsync();
+        store.Set("key1", new DownloadProgressState { Stage = "downloading:half" });
+        await store.FlushAsync();
+
         store.Remove("key1");
-        Assert.Null(store.GetProgress("key1"));
+        await store.FlushAsync();
+
+        var reloaded = NewStore();
+        await reloaded.LoadAsync();
+        Assert.Null(reloaded.Get("key1"));
     }
 
     [Fact]
-    public void GetAllKeys_ReturnsTrackedKeys()
+    public async Task GetAllKeys_ReturnsTrackedKeys()
     {
-        var store = new DownloadProgressStore();
-        store.SetProgress("key-a", "status-a");
-        store.SetProgress("key-b", "status-b");
+        var store = NewStore();
+        await store.LoadAsync();
+        store.Set("key-a", new DownloadProgressState());
+        store.Set("key-b", new DownloadProgressState());
+
         var keys = store.GetAllKeys();
         Assert.Contains("key-a", keys);
         Assert.Contains("key-b", keys);
+    }
+
+    [Fact]
+    public async Task SettingAnUnchangedState_DoesNotRewriteTheFile()
+    {
+        // A download parked at the same percentage produces an identical state every cycle;
+        // without this the file would be rewritten every minute for as long as it downloads.
+        var store = NewStore();
+        await store.LoadAsync();
+        store.Set("key1", new DownloadProgressState { Stage = "downloading:started", StartedNotified = true });
+        await store.FlushAsync();
+
+        var writtenAt = File.GetLastWriteTimeUtc(_filePath);
+
+        store.Set("key1", new DownloadProgressState { Stage = "downloading:started", StartedNotified = true });
+        await store.FlushAsync();
+
+        Assert.Equal(writtenAt, File.GetLastWriteTimeUtc(_filePath));
+    }
+
+    [Fact]
+    public async Task SettingAChangedState_DoesRewriteTheFile()
+    {
+        var store = NewStore();
+        await store.LoadAsync();
+        store.Set("key1", new DownloadProgressState { Stage = "downloading:started", LastProgress = 20 });
+        await store.FlushAsync();
+
+        store.Set("key1", new DownloadProgressState { Stage = "downloading:started", LastProgress = 40 });
+        await store.FlushAsync();
+
+        var reloaded = NewStore();
+        await reloaded.LoadAsync();
+        Assert.Equal(40, reloaded.Get("key1")!.LastProgress);
+    }
+
+    [Fact]
+    public async Task LoadAsync_OnMissingFile_StartsEmpty()
+    {
+        var store = NewStore();
+        await store.LoadAsync();
+        Assert.Empty(store.GetAllKeys());
+    }
+
+    [Fact]
+    public async Task LoadAsync_OnCorruptFile_StartsEmptyRatherThanThrowing()
+    {
+        await File.WriteAllTextAsync(_filePath, "{ this is not json");
+
+        var store = NewStore();
+        await store.LoadAsync();
+        Assert.Empty(store.GetAllKeys());
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (File.Exists(_filePath))
+        {
+            File.Delete(_filePath);
+        }
     }
 }
 
@@ -408,17 +512,93 @@ public sealed class ArrCorrelationTests
 }
 
 /// <summary>
+/// Tests for <see cref="PluginConfiguration.MigrateLegacyPollingInterval"/>, which moves a
+/// pre-existing per-instance polling interval onto the global setting exactly once.
+/// </summary>
+public sealed class LegacyPollingIntervalMigrationTests
+{
+    private static ArrInstanceConfig Instance(int seconds, bool enabled = true) =>
+        new() { Enabled = enabled, PollingIntervalSeconds = seconds };
+
+    [Fact]
+    public void AdoptsTheMinimumAcrossEnabledInstances()
+    {
+        // The minimum is what the background service already used at runtime, so the effective
+        // polling rate has to come out of the upgrade unchanged.
+        var config = new PluginConfiguration
+        {
+            SonarrInstances = [Instance(120)],
+            RadarrInstances = [Instance(30)]
+        };
+
+        Assert.True(config.MigrateLegacyPollingInterval());
+        Assert.Equal(30, config.NotificationSettings.DownloadPollingIntervalSeconds);
+        Assert.True(config.LegacyPollingIntervalMigrated);
+    }
+
+    [Fact]
+    public void IgnoresDisabledInstances()
+    {
+        var config = new PluginConfiguration
+        {
+            SonarrInstances = [Instance(30, enabled: false)],
+            RadarrInstances = [Instance(180)]
+        };
+
+        config.MigrateLegacyPollingInterval();
+        Assert.Equal(180, config.NotificationSettings.DownloadPollingIntervalSeconds);
+    }
+
+    [Fact]
+    public void FreshInstall_KeepsTheNewDefault()
+    {
+        var config = new PluginConfiguration();
+
+        Assert.True(config.MigrateLegacyPollingInterval());
+        Assert.Equal(60, config.NotificationSettings.DownloadPollingIntervalSeconds);
+    }
+
+    [Fact]
+    public void RunsOnlyOnce_SoALaterAdminChoiceSurvives()
+    {
+        var config = new PluginConfiguration { RadarrInstances = [Instance(30)] };
+        config.MigrateLegacyPollingInterval();
+
+        // The admin then picks something else by hand.
+        config.NotificationSettings.DownloadPollingIntervalSeconds = 120;
+
+        Assert.False(config.MigrateLegacyPollingInterval());
+        Assert.Equal(120, config.NotificationSettings.DownloadPollingIntervalSeconds);
+    }
+
+    [Fact]
+    public void PreserveSecrets_CarriesTheMigrationFlag_SoASaveCannotRetriggerIt()
+    {
+        // The config form doesn't know the flag exists, so an admin save arrives with it false.
+        var existing = new PluginConfiguration { LegacyPollingIntervalMigrated = true };
+        var incoming = new PluginConfiguration { LegacyPollingIntervalMigrated = false };
+
+        PluginConfiguration.PreserveSecrets(existing, incoming);
+
+        Assert.True(incoming.LegacyPollingIntervalMigrated);
+    }
+}
+
+/// <summary>
 /// Tests for build and release metadata.
 /// </summary>
 public sealed class ReleaseMetadataTests
 {
     [Fact]
-    public void BuildScript_DefaultsToV013AndUpdatesRepositoryManifest()
+    public void BuildScript_PinsAFourPartVersionAndUpdatesRepositoryManifest()
     {
         var rootDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..");
         var buildScript = File.ReadAllText(Path.Combine(rootDir, "build.sh"));
 
-        Assert.Contains("VERSION=\"0.1.0.3\"", buildScript);
+        // Deliberately matches the shape rather than a literal version: this assertion used to
+        // hardcode 0.1.0.3 and so failed on every release bump, which tells you nothing about
+        // whether the build script is correct.
+        Assert.Matches(@"VERSION=""\d+\.\d+\.\d+\.\d+""", buildScript);
         Assert.Contains("repository/manifest.json", buildScript);
         Assert.Contains("Rovaal-code/JellyNotify/releases/download", buildScript);
     }
@@ -1414,113 +1594,342 @@ public sealed class CaptionTruncatorTests
 }
 
 /// <summary>
-/// Tests for <see cref="ArrSyncService.MapArrStatus"/>'s handling of the *arr import
-/// statuses that used to map to the now-retired DownloadImported notification.
+/// Tests for <see cref="ArrSyncService.DescribeNotification"/>, which renders the user-facing
+/// text once the transition has decided something is worth sending. The stall watchdog and
+/// *arr's own warning share a notification type, so the stage is what has to tell them apart.
 /// </summary>
-public sealed class MapArrStatusTests
+public sealed class DescribeNotificationTests
 {
-    [Theory]
-    [InlineData("importpending")]
-    [InlineData("imported")]
-    [InlineData("completed")]
-    public void MapArrStatus_ImportStatuses_ProduceNoNotification(string status)
+    [Fact]
+    public void Started_UsesTheDownloadStartedText()
     {
-        var (type, title, message) = ArrSyncService.MapArrStatus(status, "One Piece", "en-US");
-
-        Assert.Null(type);
-        Assert.Equal(string.Empty, title);
-        Assert.Equal(string.Empty, message);
+        var (title, _) = ArrSyncService.DescribeNotification(
+            NotificationType.DownloadStarted, ArrSyncService.StartedStage, "One Piece", 6, "es-ES");
+        Assert.Equal("Descarga iniciada", title);
     }
 
     [Fact]
-    public void MapArrStatus_Downloading_StillProducesDownloadStarted()
+    public void Progress_UsesTheDownloadingText()
     {
-        var (type, _, _) = ArrSyncService.MapArrStatus("downloading", "One Piece", "en-US");
-        Assert.Equal(NotificationType.DownloadStarted, type);
+        var (title, _) = ArrSyncService.DescribeNotification(
+            NotificationType.DownloadProgress, ArrSyncService.HalfStage, "One Piece", 6, "es-ES");
+        Assert.Equal("Descargando", title);
+    }
+
+    [Fact]
+    public void Warning_OnTheStalledStage_UsesTheStalledTextAndReportsTheHours()
+    {
+        var (title, message) = ArrSyncService.DescribeNotification(
+            NotificationType.DownloadWarning, ArrSyncService.StalledStage, "One Piece", 6, "es-ES");
+
+        Assert.Equal("Descarga estancada", title);
+        Assert.Contains("6 h", message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Warning_OnAnyOtherStage_UsesTheGenericWarningText()
+    {
+        var (title, _) = ArrSyncService.DescribeNotification(
+            NotificationType.DownloadWarning, ArrSyncService.WarningStage, "One Piece", 6, "es-ES");
+        Assert.Equal("Aviso de descarga", title);
     }
 }
 
 /// <summary>
-/// Tests for <see cref="ArrSyncService.ComputeStage"/> and its two new download sub-stages,
-/// which gate "download started" behind real transfer (progress &gt; 0 with an ETA) and the
-/// mid-download "Downloading" ping behind a configurable percentage threshold.
+/// Tests for <see cref="ArrSyncService.ComputeTransition"/> — the ordered notification sequence,
+/// the warning hysteresis that stops a seedless torrent's flapping from notifying on every
+/// cycle, and the stall watchdog that finally reports a download that will never finish.
 /// </summary>
-public sealed class DownloadStageTests
+public sealed class DownloadTransitionTests
 {
-    private static ArrQueueItem Downloading(double size, double sizeleft, string? timeleft) => new()
+    private static readonly DateTime Now = new(2026, 7, 30, 12, 0, 0, DateTimeKind.Utc);
+
+    private static PollContext Context(int threshold = 50, int stalledHours = 6, DateTime? now = null) =>
+        new(threshold, stalledHours, now ?? Now);
+
+    private static ArrQueueItem Downloading(double size, double sizeleft, string? timeleft = "00:10:00") => new()
     {
         Status = "downloading",
         TrackedDownloadState = "downloading",
+        TrackedDownloadStatus = "ok",
         Size = size,
         Sizeleft = sizeleft,
         Timeleft = timeleft
     };
 
-    [Fact]
-    public void ComputeStage_JustAppeared_NoTransferOrEta_IsPending()
+    private static ArrQueueItem Warning(double size, double sizeleft) => new()
     {
-        var stage = ArrSyncService.ComputeStage("downloading", Downloading(1000, 1000, null), 50);
-        Assert.Equal("downloading:pending", stage);
+        Status = "warning",
+        TrackedDownloadState = "downloading",
+        TrackedDownloadStatus = "warning",
+        Size = size,
+        Sizeleft = sizeleft
+    };
+
+    [Fact]
+    public void JustAppeared_NothingTransferred_NotifiesNothing()
+    {
+        var t = ArrSyncService.ComputeTransition(null, "downloading", Downloading(1000, 1000), Context());
+
+        Assert.Null(t.Notify);
+        Assert.Equal(ArrSyncService.PendingStage, t.State.Stage);
     }
 
     [Fact]
-    public void ComputeStage_ProgressWithoutEta_StaysPending()
+    public void RealProgress_BelowThreshold_NotifiesStarted()
     {
-        // 20% done but no ETA yet — the user asked for both before "download started".
-        var stage = ArrSyncService.ComputeStage("downloading", Downloading(1000, 800, null), 50);
-        Assert.Equal("downloading:pending", stage);
+        var t = ArrSyncService.ComputeTransition(null, "downloading", Downloading(1000, 800), Context()); // 20%
+
+        Assert.Equal(NotificationType.DownloadStarted, t.Notify);
+        Assert.Equal(ArrSyncService.StartedStage, t.State.Stage);
+        Assert.True(t.State.StartedNotified);
     }
 
     [Fact]
-    public void ComputeStage_RealProgressWithEta_BelowThreshold_IsStarted()
+    public void ProgressWithoutEta_StillNotifiesStarted()
     {
-        var stage = ArrSyncService.ComputeStage("downloading", Downloading(1000, 800, "00:10:00"), 50); // 20%
-        Assert.Equal("downloading:started", stage);
+        // The old rule also demanded an ETA, so download clients that report none never
+        // produced a "download started" at all.
+        var t = ArrSyncService.ComputeTransition(null, "downloading", Downloading(1000, 800, null), Context());
+
+        Assert.Equal(NotificationType.DownloadStarted, t.Notify);
     }
 
     [Fact]
-    public void ComputeStage_AtThreshold_IsHalf()
+    public void CrossingTheThresholdAfterStarted_NotifiesDownloading()
     {
-        var stage = ArrSyncService.ComputeStage("downloading", Downloading(1000, 500, "00:05:00"), 50); // 50%
-        Assert.Equal("downloading:half", stage);
+        var started = ArrSyncService.ComputeTransition(null, "downloading", Downloading(1000, 800), Context());
+        var half = ArrSyncService.ComputeTransition(started.State, "downloading", Downloading(1000, 400), Context()); // 60%
+
+        Assert.Equal(NotificationType.DownloadProgress, half.Notify);
+        Assert.Equal(ArrSyncService.HalfStage, half.State.Stage);
     }
 
     [Fact]
-    public void ComputeStage_AlreadyPastThresholdOnFirstPoll_JumpsStraightToHalf()
+    public void FirstSightingAlreadyPastTheThreshold_NotifiesNothing()
     {
-        var stage = ArrSyncService.ComputeStage("downloading", Downloading(1000, 100, "00:01:00"), 50); // 90%
-        Assert.Equal("downloading:half", stage);
+        // The whole transfer fitted inside one poll window. "Downloading 88%" with no preceding
+        // "started" was the reported bug; the *arr webhook's "available" lands seconds later.
+        var t = ArrSyncService.ComputeTransition(null, "downloading", Downloading(1000, 120), Context()); // 88%
+
+        Assert.Null(t.Notify);
+        Assert.True(t.State.StartedNotified);
+        Assert.True(t.State.HalfNotified);
+    }
+
+    [Fact]
+    public void DownloadingNeverNotifiesTwice()
+    {
+        var state = ArrSyncService.ComputeTransition(null, "downloading", Downloading(1000, 800), Context()).State;
+        state = ArrSyncService.ComputeTransition(state, "downloading", Downloading(1000, 400), Context()).State;
+
+        var again = ArrSyncService.ComputeTransition(state, "downloading", Downloading(1000, 200), Context());
+        Assert.Null(again.Notify);
+    }
+
+    [Fact]
+    public void HalfIsNeverSentWithoutStarted_EvenAfterAWarning()
+    {
+        // Sequence: starts at 20%, warns, recovers past the threshold. The recovery must not
+        // re-announce "started", and must still be allowed to announce "Downloading".
+        var state = ArrSyncService.ComputeTransition(null, "downloading", Downloading(1000, 800), Context()).State;
+        state = ArrSyncService.ComputeTransition(state, "warning", Warning(1000, 800), Context()).State;
+        state = ArrSyncService.ComputeTransition(state, "warning", Warning(1000, 790), Context()).State;
+
+        var recovered = ArrSyncService.ComputeTransition(state, "downloading", Downloading(1000, 300), Context());
+
+        Assert.Equal(NotificationType.DownloadProgress, recovered.Notify);
+    }
+
+    [Fact]
+    public void SingleWarningCycle_NotifiesNothing()
+    {
+        var t = ArrSyncService.ComputeTransition(null, "warning", Warning(1000, 970), Context());
+
+        Assert.Null(t.Notify);
+        Assert.Equal(1, t.State.WarningStreak);
+    }
+
+    [Fact]
+    public void TwoConsecutiveWarningCycles_NotifyOnce()
+    {
+        var first = ArrSyncService.ComputeTransition(null, "warning", Warning(1000, 970), Context());
+        var second = ArrSyncService.ComputeTransition(first.State, "warning", Warning(1000, 960), Context());
+        var third = ArrSyncService.ComputeTransition(second.State, "warning", Warning(1000, 950), Context());
+
+        Assert.Null(first.Notify);
+        Assert.Equal(NotificationType.DownloadWarning, second.Notify);
+        Assert.Null(third.Notify);
+    }
+
+    [Fact]
+    public void FlappingWarning_NeverNotifies()
+    {
+        // The reported spam: a seedless torrent drops in and out of *arr's warning state as
+        // peers come and go. Alternating never reaches two consecutive warnings.
+        DownloadProgressState? state = null;
+        var notifications = new List<NotificationType>();
+
+        for (var cycle = 0; cycle < 8; cycle++)
+        {
+            var warn = cycle % 2 == 0;
+            var item = warn ? Warning(1000, 970 - cycle) : Downloading(1000, 970 - cycle);
+            var t = ArrSyncService.ComputeTransition(state, warn ? "warning" : "downloading", item, Context());
+            state = t.State;
+            if (t.Notify is not null)
+            {
+                notifications.Add(t.Notify.Value);
+            }
+        }
+
+        // The one legitimate notification is "started" from the first healthy observation.
+        Assert.Equal(new[] { NotificationType.DownloadStarted }, notifications);
+    }
+
+    [Fact]
+    public void NoMovementForLongerThanTheWindow_ReportsStalledOnce()
+    {
+        var start = ArrSyncService.ComputeTransition(null, "downloading", Downloading(1000, 970), Context()); // 3%
+        var sixHoursLater = Now.AddHours(6);
+
+        var stalled = ArrSyncService.ComputeTransition(
+            start.State, "downloading", Downloading(1000, 970), Context(now: sixHoursLater));
+
+        Assert.Equal(NotificationType.DownloadWarning, stalled.Notify);
+        Assert.Equal(ArrSyncService.StalledStage, stalled.State.Stage);
+
+        var later = ArrSyncService.ComputeTransition(
+            stalled.State, "downloading", Downloading(1000, 970), Context(now: sixHoursLater.AddHours(12)));
+
+        Assert.Null(later.Notify);
+        Assert.Equal(ArrSyncService.StalledStage, later.State.Stage);
+    }
+
+    [Fact]
+    public void MovementInsideTheWindow_DoesNotReportStalled()
+    {
+        var start = ArrSyncService.ComputeTransition(null, "downloading", Downloading(1000, 970), Context());
+
+        var moved = ArrSyncService.ComputeTransition(
+            start.State, "downloading", Downloading(1000, 900), Context(now: Now.AddHours(5)));
+
+        Assert.Null(moved.Notify);
+        Assert.NotEqual(ArrSyncService.StalledStage, moved.State.Stage);
+    }
+
+    [Fact]
+    public void AStalledDownloadThatResumes_IsTrackedAgain()
+    {
+        var start = ArrSyncService.ComputeTransition(null, "downloading", Downloading(1000, 970), Context());
+        var stalled = ArrSyncService.ComputeTransition(
+            start.State, "downloading", Downloading(1000, 970), Context(now: Now.AddHours(6)));
+        Assert.True(stalled.State.StalledNotified);
+
+        var resumed = ArrSyncService.ComputeTransition(
+            stalled.State, "downloading", Downloading(1000, 900), Context(now: Now.AddHours(7)));
+
+        Assert.False(resumed.State.StalledNotified);
+        Assert.NotEqual(ArrSyncService.StalledStage, resumed.State.Stage);
+    }
+
+    [Fact]
+    public void StalledHoursZero_DisablesTheWatchdog()
+    {
+        var start = ArrSyncService.ComputeTransition(null, "downloading", Downloading(1000, 970), Context(stalledHours: 0));
+
+        var later = ArrSyncService.ComputeTransition(
+            start.State, "downloading", Downloading(1000, 970), Context(stalledHours: 0, now: Now.AddDays(7)));
+
+        Assert.Null(later.Notify);
+        Assert.NotEqual(ArrSyncService.StalledStage, later.State.Stage);
+    }
+
+    [Theory]
+    [InlineData("importpending")]
+    [InlineData("imported")]
+    [InlineData("completed")]
+    public void ImportStatuses_NotifyNothing_AndAreExemptFromTheWatchdog(string status)
+    {
+        // Their percentage is 100 and will never move, so measuring movement against them
+        // would report every slow import as a stalled download.
+        var item = Downloading(1000, 0);
+        var first = ArrSyncService.ComputeTransition(null, status, item, Context());
+        var muchLater = ArrSyncService.ComputeTransition(first.State, status, item, Context(now: Now.AddDays(2)));
+
+        Assert.Null(first.Notify);
+        Assert.Null(muchLater.Notify);
+        Assert.Equal(status, muchLater.State.Stage);
     }
 
     [Theory]
     [InlineData("failed")]
-    [InlineData("warning")]
-    [InlineData("importpending")]
-    public void ComputeStage_NonDownloadingStatus_PassesThroughUnchanged(string status)
+    [InlineData("blocklisted")]
+    public void FailureStatuses_NotifyOnce(string status)
     {
-        Assert.Equal(status, ArrSyncService.ComputeStage(status, new ArrQueueItem(), 50));
+        var first = ArrSyncService.ComputeTransition(null, status, Downloading(1000, 500), Context());
+        var second = ArrSyncService.ComputeTransition(first.State, status, Downloading(1000, 500), Context());
+
+        Assert.Equal(NotificationType.DownloadFailed, first.Notify);
+        Assert.Null(second.Notify);
     }
 
     [Fact]
-    public void MapArrStatus_DownloadingStarted_ProducesDownloadStarted()
+    public void UnknownSize_IsTreatedAsNothingTransferred()
     {
-        var (type, _, _) = ArrSyncService.MapArrStatus("downloading:started", "One Piece", "en-US");
-        Assert.Equal(NotificationType.DownloadStarted, type);
+        var t = ArrSyncService.ComputeTransition(null, "downloading", Downloading(0, 0), Context());
+
+        Assert.Null(t.Notify);
+        Assert.Equal(ArrSyncService.PendingStage, t.State.Stage);
+    }
+}
+
+/// <summary>
+/// Tests for <see cref="ArrSyncService.NormalizeArrStatus"/>, in particular that purely
+/// informational status messages on a healthy download are no longer read as warnings.
+/// </summary>
+public sealed class NormalizeArrStatusTests
+{
+    [Fact]
+    public void ErrorMessage_IsFailed()
+    {
+        var status = ArrSyncService.NormalizeArrStatus(new ArrQueueItem { ErrorMessage = "boom" });
+        Assert.Equal("failed", status);
     }
 
     [Fact]
-    public void MapArrStatus_DownloadingHalf_ProducesDownloadingProgress()
+    public void TrackedDownloadStatusWarning_IsWarning()
     {
-        var (type, title, _) = ArrSyncService.MapArrStatus("downloading:half", "One Piece", "es-ES");
-        Assert.Equal(NotificationType.DownloadProgress, type);
-        Assert.Equal("Descargando", title);
+        var status = ArrSyncService.NormalizeArrStatus(new ArrQueueItem
+        {
+            TrackedDownloadStatus = "warning",
+            TrackedDownloadState = "downloading"
+        });
+        Assert.Equal("warning", status);
     }
 
     [Fact]
-    public void MapArrStatus_DownloadingPending_ProducesNoNotification()
+    public void StatusMessagesOnAnOkDownload_AreNotAWarning()
     {
-        var (type, _, _) = ArrSyncService.MapArrStatus("downloading:pending", "One Piece", "en-US");
-        Assert.Null(type);
+        var status = ArrSyncService.NormalizeArrStatus(new ArrQueueItem
+        {
+            TrackedDownloadStatus = "ok",
+            TrackedDownloadState = "downloading",
+            StatusMessages = new List<ArrStatusMessage> { new() { Title = "Sample file" } }
+        });
+
+        Assert.Equal("downloading", status);
+    }
+
+    [Fact]
+    public void StatusMessagesWithoutAnExplicitOk_StillCountAsAWarning()
+    {
+        var status = ArrSyncService.NormalizeArrStatus(new ArrQueueItem
+        {
+            TrackedDownloadState = "downloading",
+            StatusMessages = new List<ArrStatusMessage> { new() { Title = "Stalled, no connections" } }
+        });
+
+        Assert.Equal("warning", status);
     }
 }
 

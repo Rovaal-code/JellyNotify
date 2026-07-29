@@ -248,6 +248,7 @@
             'Download started': strings.downloadStarted,
             'Downloading': strings.downloading,
             'Download warning': strings.downloadWarning,
+            'Download stalled': strings.downloadStalled,
             'Download failed': strings.downloadFailed,
             'Media available': strings.mediaAvailable,
             'Media imported': strings.mediaAvailable,
@@ -1448,6 +1449,10 @@
             setChecked('notif-enabled', ns.enabled);
             setValue('notif-dedup-window', ns.deduplicationWindowMinutes);
             setValue('notif-downloading-threshold', ns.downloadingNotifyThresholdPercent);
+            setSelectValuePreservingUnknown(
+                document.getElementById('notif-download-poll-interval'),
+                ns.downloadPollingIntervalSeconds || 60);
+            setValue('notif-stalled-hours', ns.stalledDownloadHours);
         }
 
         // Default language
@@ -1750,7 +1755,6 @@
             if (data.hasApiKey) {
                 wrapper.querySelector('.arr-apikey').placeholder = (strings.config && strings.config.apiKeyConfiguredPlaceholder) || '(configured — leave blank to keep)';
             }
-            setSelectValuePreservingUnknown(wrapper.querySelector('.arr-polling'), data.pollingIntervalSeconds || 300);
             wrapper.querySelector('.arr-ignore-ssl').checked = data.ignoreSslErrors || false;
         }
 
@@ -2041,7 +2045,12 @@
             notificationSettings: {
                 enabled: isChecked('notif-enabled'),
                 deduplicationWindowMinutes: parseInt(getValue('notif-dedup-window') || '10'),
-                downloadingNotifyThresholdPercent: parseInt(getValue('notif-downloading-threshold') || '50')
+                downloadingNotifyThresholdPercent: parseInt(getValue('notif-downloading-threshold') || '50'),
+                downloadPollingIntervalSeconds: parseInt(getValue('notif-download-poll-interval') || '60'),
+                // Not the "|| default" pattern used above: 0 is a meaningful value here ("never
+                // report stalled") and || would silently turn it back into 6. Only a genuinely
+                // unparseable field falls back.
+                stalledDownloadHours: parseIntOrDefault(getValue('notif-stalled-hours'), 6)
             },
             defaultLanguage: getValue('notif-language') || 'auto',
             notificationRetentionDays: parseInt(getValue('notif-retention-days') || '30'),
@@ -2087,8 +2096,10 @@
                 enabled: wrapper.querySelector('.arr-enabled')?.checked ?? true,
                 serverUrl: wrapper.querySelector('.arr-url')?.value || '',
                 apiKey: apiKey || undefined,
-                ignoreSslErrors: wrapper.querySelector('.arr-ignore-ssl')?.checked ?? false,
-                pollingIntervalSeconds: parseInt(wrapper.querySelector('.arr-polling')?.value || '300')
+                ignoreSslErrors: wrapper.querySelector('.arr-ignore-ssl')?.checked ?? false
+                // pollingIntervalSeconds is deliberately absent: the interval is now a single
+                // global setting under Notifications, which is what the shared poll cycle
+                // always actually used. See NotificationSettings.DownloadPollingIntervalSeconds.
             };
         });
     }
@@ -2232,6 +2243,8 @@
     // ─── DOM helpers ─────────────────────────────────────────────────
     function isChecked(id) { return document.getElementById(id)?.checked ?? false; }
     function getValue(id) { return document.getElementById(id)?.value ?? ''; }
+    /** Parses an integer field, falling back only when it's genuinely unparseable — so a legitimate 0 survives. */
+    function parseIntOrDefault(raw, fallback) { const parsed = parseInt(raw, 10); return Number.isNaN(parsed) ? fallback : parsed; }
     function setValue(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
     function setChecked(id, val) { const el = document.getElementById(id); if (el) el.checked = !!val; }
 

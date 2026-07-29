@@ -86,7 +86,7 @@ public static class NotificationText
                 : ("Problem detected", $"A problem was detected for \"{mediaTitle}\".");
     }
 
-    /// <summary>A Sonarr/Radarr queue item began transferring for real (progress &gt; 0 with an ETA), seen on the queue poll — not the bare grab.</summary>
+    /// <summary>A Sonarr/Radarr queue item began transferring for real (progress &gt; 0), seen on the queue poll — not the bare grab, which fires before anything has transferred.</summary>
     public static (string Title, string Message) ArrDownloadStarted(string mediaTitle, string language)
     {
         var (es, ca) = Flags(language);
@@ -128,6 +128,21 @@ public static class NotificationText
             : es
                 ? ("Aviso de descarga", $"Aviso en la descarga de \"{mediaTitle}\".")
                 : ("Download warning", $"Warning on download of \"{mediaTitle}\".");
+    }
+
+    /// <summary>
+    /// A download has sat in the queue without its percentage moving for long enough that it
+    /// is almost certainly never finishing — the seedless-torrent case Sonarr/Radarr never
+    /// report as an error. Uses "h" as the unit so no language needs a plural form.
+    /// </summary>
+    public static (string Title, string Message) ArrDownloadStalled(string mediaTitle, int hours, string language)
+    {
+        var (es, ca) = Flags(language);
+        return ca
+            ? ("Descàrrega encallada", $"\"{mediaTitle}\" fa {hours} h que no avança. Potser no hi ha llavors disponibles.")
+            : es
+                ? ("Descarga estancada", $"\"{mediaTitle}\" lleva {hours} h sin avanzar. Puede que no haya semillas disponibles.")
+                : ("Download stalled", $"\"{mediaTitle}\" hasn't progressed in {hours} h. There may be no seeds available.");
     }
 
     private static (bool IsSpanish, bool IsCatalan) Flags(string language) => (

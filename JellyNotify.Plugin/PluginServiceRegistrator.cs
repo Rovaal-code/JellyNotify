@@ -64,12 +64,14 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // JSON-backed store for per-user notification preferences.
         serviceCollection.AddSingleton<IUserPreferenceStore, JsonUserPreferenceStore>();
 
+        // JSON-backed store for per-download notification state from Sonarr/Radarr. On disk
+        // rather than in memory because its flags suppress repeat notifications — see
+        // DownloadProgressState.
+        serviceCollection.AddSingleton<IDownloadProgressStore, JsonDownloadProgressStore>();
+
         // --- In-Memory Stores ---
         // In-memory store tracking notification deduplication state.
         serviceCollection.AddSingleton<INotificationDeduplicationStore, NotificationDeduplicationStore>();
-
-        // In-memory store tracking download progress from Sonarr/Radarr.
-        serviceCollection.AddSingleton<IDownloadProgressStore, DownloadProgressStore>();
 
         // --- Core Services ---
         // Orchestrates notification routing across all configured channels.

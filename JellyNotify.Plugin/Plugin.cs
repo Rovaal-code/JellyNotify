@@ -38,6 +38,17 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         _logger = logger;
         Instance = this;
+
+        // Runs before anything else can read the interval (the background service starts
+        // later), so the rest of the plugin only ever sees the global setting.
+        if (Configuration.MigrateLegacyPollingInterval())
+        {
+            _logger.LogInformation(
+                "JellyNotify: migrated the per-instance polling interval to the global download poll interval ({Seconds}s)",
+                Configuration.NotificationSettings.DownloadPollingIntervalSeconds);
+            SavePluginConfiguration(Configuration);
+        }
+
         _logger.LogInformation("JellyNotify plugin v{Version} loaded", Version);
     }
 

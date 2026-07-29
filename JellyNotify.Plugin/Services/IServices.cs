@@ -65,22 +65,33 @@ public interface IDiscordDmClient
 }
 
 /// <summary>
-/// In-memory store for download progress state from Sonarr/Radarr.
-/// Tracks which downloads are being monitored to detect state transitions.
+/// Disk-backed store for per-download notification state from Sonarr/Radarr, keyed by
+/// "{instanceName}:{sonarr|radarr}:{downloadId}:{jellyfinUserId}".
+/// <para>
+/// Reads and writes are synchronous against an in-memory cache so the poll's inner loop stays
+/// allocation-cheap; <see cref="LoadAsync"/> and <see cref="FlushAsync"/> bracket a cycle so a
+/// poll costs at most one file read and one file write no matter how many downloads it touched.
+/// </para>
 /// </summary>
 public interface IDownloadProgressStore
 {
-    /// <summary>Gets the current tracked progress for a given download key.</summary>
-    string? GetProgress(string downloadKey);
+    /// <summary>Loads state from disk into the cache if it hasn't been loaded yet. Idempotent.</summary>
+    Task LoadAsync();
 
-    /// <summary>Sets (upserts) the progress for a given download key.</summary>
-    void SetProgress(string downloadKey, string status);
+    /// <summary>Gets the tracked state for a download key, or null if it isn't tracked yet.</summary>
+    DownloadProgressState? Get(string downloadKey);
 
-    /// <summary>Removes a download from tracking.</summary>
+    /// <summary>Sets (upserts) the state for a download key. Marks the store dirty; call <see cref="FlushAsync"/> to persist.</summary>
+    void Set(string downloadKey, DownloadProgressState state);
+
+    /// <summary>Removes a download from tracking. Marks the store dirty.</summary>
     void Remove(string downloadKey);
 
     /// <summary>Returns all currently tracked download keys.</summary>
     IReadOnlyList<string> GetAllKeys();
+
+    /// <summary>Writes the cache to disk if anything changed since the last write; a no-op otherwise.</summary>
+    Task FlushAsync();
 }
 
 /// <summary>

@@ -162,26 +162,17 @@ public sealed class JellyNotifyBackgroundService : BackgroundService
         plugin.SavePluginConfiguration(config);
     }
 
+    /// <summary>
+    /// Reads the single global download-poll interval. This used to derive the interval from the
+    /// per-instance <c>PollingIntervalSeconds</c> by taking the minimum across enabled
+    /// instances, which meant the "per-instance" setting was never really per-instance — one
+    /// shared cycle covers every instance, so setting 30s on Radarr silently sped Sonarr up too.
+    /// The setting is now global, matching what the code always did. Clamped to the range the
+    /// admin dropdown offers so an out-of-band edit can't produce a busy loop.
+    /// </summary>
     private static int GetPollingIntervalSeconds()
     {
-        var config = Plugin.Instance?.Configuration;
-        if (config is null)
-        {
-            return 300;
-        }
-
-        // Seerr no longer contributes to this — it has no recurring cycle anymore (see the
-        // class doc comment). This interval only governs how often the *arr queue is
-        // checked for download progress, so it's driven purely by enabled Sonarr/Radarr
-        // instances. Floor of 30s matches the shortest option offered in the admin UI's
-        // dropdown, so picking that value there is never silently overridden here.
-        var intervals = config.SonarrInstances
-            .Where(i => i.Enabled)
-            .Select(i => i.PollingIntervalSeconds)
-            .Concat(config.RadarrInstances.Where(i => i.Enabled).Select(i => i.PollingIntervalSeconds))
-            .Where(i => i > 0)
-            .ToList();
-
-        return intervals.Count > 0 ? Math.Max(30, intervals.Min()) : 300;
+        var configured = Plugin.Instance?.Configuration.NotificationSettings.DownloadPollingIntervalSeconds ?? 60;
+        return Math.Clamp(configured, 30, 300);
     }
 }

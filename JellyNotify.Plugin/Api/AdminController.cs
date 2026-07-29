@@ -1081,7 +1081,6 @@ public sealed class ArrInstanceDto
         ServerUrl = config.ServerUrl;
         HasApiKey = !string.IsNullOrWhiteSpace(config.ApiKey);
         IgnoreSslErrors = config.IgnoreSslErrors;
-        PollingIntervalSeconds = config.PollingIntervalSeconds;
     }
 
     /// <summary>Gets the instance ID.</summary>
@@ -1101,9 +1100,6 @@ public sealed class ArrInstanceDto
 
     /// <summary>Gets a value indicating whether SSL certificate validation is skipped for this instance.</summary>
     public bool IgnoreSslErrors { get; }
-
-    /// <summary>Gets the polling interval in seconds for this instance's download queue (progress/stalled/failed tracking — Sonarr/Radarr have no webhook for this).</summary>
-    public int PollingIntervalSeconds { get; }
 }
 
 /// <summary>Response DTO for connection tests.</summary>

@@ -3,31 +3,6 @@ using System.Collections.Concurrent;
 namespace Jellyfin.Plugin.JellyNotify;
 
 /// <summary>
-/// In-memory download progress tracker.
-/// Keyed by "{instanceName}:{downloadId}" for unique identification across multiple *arr instances.
-/// </summary>
-public sealed class DownloadProgressStore : IDownloadProgressStore
-{
-    private readonly ConcurrentDictionary<string, string> _progress = new(StringComparer.OrdinalIgnoreCase);
-
-    /// <inheritdoc />
-    public string? GetProgress(string downloadKey) =>
-        _progress.TryGetValue(downloadKey, out var status) ? status : null;
-
-    /// <inheritdoc />
-    public void SetProgress(string downloadKey, string status) =>
-        _progress[downloadKey] = status;
-
-    /// <inheritdoc />
-    public void Remove(string downloadKey) =>
-        _progress.TryRemove(downloadKey, out _);
-
-    /// <inheritdoc />
-    public IReadOnlyList<string> GetAllKeys() =>
-        _progress.Keys.ToList().AsReadOnly();
-}
-
-/// <summary>
 /// In-memory notification deduplication store.
 /// Uses a time-based expiry to avoid duplicate notifications within a configurable window.
 /// </summary>
