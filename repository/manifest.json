@@ -81,5 +81,24 @@
         "timestamp": "2026-07-04T20:00:08Z"
       }
     ]
+  },
+  {
+    "guid": "05cac539-35ae-4f0d-be40-5f0eabd7f43c",
+    "versions": [
+      {
+        "version": "0.1.0.0",
+        "changelog": "Jellyfin Provider Sections v0.1.0.0 - first installable release\n\nCreates home screen sections by streaming provider (\"Popular en Crunchyroll\", \"Novedades en Prime Video\"), built from TMDb Discover, resolved against the local library, with requests through Seerr.\n\nVerified against Jellyfin 10.11.11 with Home Screen Sections 2.5.11.0 and File Transformation 2.5.11.0, both required, and Seerr 3.4.0, optional.\n\n- Each row shows the provider logo to the left of its title.\n- Titles already in the library open their real Jellyfin page and keep watch state; the rest are drawn as portrait cards with their TMDb artwork, served and cached by the plugin itself so the browser never talks to image.tmdb.org.\n- With Jellyfin Enhanced installed, clicking one of those cards opens its Jellyseerr detail modal. Without it the card still renders and the click is inert, rather than navigating to a page for an item the server does not have.\n- The rows do not show Jellyfin's hover overlay: on an external card play, mark as played and favourite all act on something that is not there. Every other home row keeps its own overlay untouched.\n- Administration page with the provider picker (region, content type, filters), connection tests, diagnostics, and a per-section preview.\n- Degrades cleanly: if TMDb or Seerr are unreachable the home screen still loads, and the failure is reported instead of being swallowed.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/Rovaal-code/JellyProviderSections/releases/download/v0.1.0/jellyprovidersections_0.1.0.0.zip",
+        "checksum": "c523351cf7504742c330cd42254eb43a",
+        "timestamp": "2026-07-29T15:46:45Z"
+      }
+    ],
+    "category": "Metadata",
+    "name": "Jellyfin Provider Sections",
+    "description": "Creates dynamic home screen sections based on TMDb streaming providers, with local library resolution and Seerr requests.",
+    "overview": "Lets an administrator create provider-based streaming sections (e.g. \"Popular on Crunchyroll\") for the Jellyfin home screen, backed by TMDb Discover, resolved against the local library, with Seerr request support.",
+    "owner": "Rovaal-code",
+    "imageUrl": ""
   }
 ]
